@@ -11,6 +11,17 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
+  <!-- ★ 防暗黑模式刷新白闪 (Zero-FOUC Preloader) -->
+  <script>
+    (function() {
+      try {
+        var mode = localStorage.getItem('pwabox_pomodoro_theme') || localStorage.getItem('pwabox_theme_global') || 'system';
+        var isDark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) document.documentElement.classList.add('dark');
+      } catch (e) {}
+    })();
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -45,10 +56,10 @@
   <div class="max-w-7xl 2xl:max-w-[1680px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-3 sm:py-6 md:py-8 flex-1 flex flex-col justify-between md:justify-start min-h-0 overflow-hidden">
     
     <!-- 顶部操作栏 -->
-    <header class="flex items-center justify-between pb-3 border-b border-neutral-200/80 dark:border-neutral-900">
+    <header class="flex items-center justify-between pb-3 border-b border-neutral-200/80 dark:border-neutral-800">
       <div class="flex items-center gap-3">
         <!-- 返回大厅按钮（独立 App 模式下自动隐藏） -->
-        <a href="../../index.html" class="standalone-hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-xs font-semibold active:scale-95 transition-all shadow-sm">
+        <a href="../../index.html" class="standalone-hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-700/80 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-xs font-semibold active:scale-95 transition-all shadow-sm">
           <i data-lucide="arrow-left" class="w-4 h-4"></i>
           <span>返回大厅</span>
         </a>
@@ -60,7 +71,7 @@
         <span class="hidden sm:inline text-xs text-neutral-400 font-mono mr-2">按 [空格] 启停 · [R] 重置</span>
 
         <!-- 移动端专属配置弹窗触发按钮 -->
-        <button id="mobileSettingsBtn" class="md:hidden p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-95 transition-all shadow-sm" title="调节时长">
+        <button id="mobileSettingsBtn" class="md:hidden p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-700/80 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-95 transition-all shadow-sm" title="调节时长">
           <i data-lucide="sliders" class="w-4 h-4 text-neutral-500"></i>
         </button>
 
@@ -72,11 +83,11 @@
 
         <!-- ★ 独立深浅色控制浮窗（纯净图标） -->
         <div class="relative">
-          <button id="themeToggleBtn" class="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-95 transition-all shadow-sm" title="外观设置">
+          <button id="themeToggleBtn" class="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-700/80 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-95 transition-all shadow-sm" title="外观设置">
             <i id="themeIcon" data-lucide="monitor" class="w-4 h-4 text-red-500"></i>
           </button>
 
-          <div id="themeMenu" class="hidden absolute right-0 mt-2 w-44 p-1.5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-xl z-50 text-xs space-y-0.5">
+          <div id="themeMenu" class="hidden absolute right-0 mt-2 w-44 p-1.5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-700/80 shadow-xl z-50 text-xs space-y-0.5">
             <button onclick="setThemeMode('system')" id="themeOptSystem" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
               <span class="flex items-center gap-2">
                 <i data-lucide="monitor" class="w-4 h-4"></i> 跟随系统
@@ -104,7 +115,7 @@
     <main class="grid grid-cols-1 md:grid-cols-12 gap-6 2xl:gap-12 my-auto md:my-0 md:mt-5 2xl:mt-8 items-start flex-1 min-h-0">
       
       <!-- 主表盘与核心控制区 -->
-      <div class="md:col-span-7 flex flex-col items-center justify-center text-center p-6 sm:p-10 2xl:p-14 rounded-2xl bg-white dark:bg-neutral-900/80 border border-neutral-200/80 dark:border-neutral-800/80 shadow-sm dark:shadow-xl backdrop-blur-sm">
+      <div class="md:col-span-7 flex flex-col items-center justify-center text-center p-6 sm:p-10 2xl:p-14 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-700/80 shadow-sm dark:shadow-xl backdrop-blur-sm">
         <!-- 模式切换 Pills (8pt 空间 + 同心圆角) -->
         <div class="inline-flex p-1 rounded-xl bg-neutral-100 dark:bg-neutral-950/80 border border-neutral-200/80 dark:border-neutral-800 mb-6 sm:mb-8">
           <button id="modeWork" class="px-4 sm:px-5 py-2 rounded-lg text-xs font-semibold transition-all duration-150 bg-red-500 text-white shadow-xs active:scale-[0.97]">
@@ -150,7 +161,7 @@
       <div class="hidden md:block md:col-span-5 space-y-4">
         
         <!-- 今日数据看板 -->
-        <div class="p-5 rounded-2xl bg-white dark:bg-neutral-900/80 border border-neutral-200/80 dark:border-neutral-800/80 shadow-sm">
+        <div class="p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-700/80 shadow-sm">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
               <i data-lucide="bar-chart-2" class="w-4 h-4 text-red-500"></i>
@@ -174,7 +185,7 @@
         </div>
 
         <!-- 桌面级时长个性化配置 -->
-        <div class="p-5 rounded-2xl bg-white dark:bg-neutral-900/80 border border-neutral-200/80 dark:border-neutral-800/80 shadow-sm">
+        <div class="p-5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-700/80 shadow-sm">
           <h3 class="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
             <i data-lucide="sliders" class="w-4 h-4 text-red-500"></i>
             时长调节 (分钟)

@@ -155,12 +155,15 @@ AI 必须极其果断、一次性完成以下清理，不留任何死角：
        - 主体卡片/工作台面板：`rounded-2xl` (16px)；
        - 内部按钮/输入框/交互块：`rounded-xl` (12px)；
        - 内部小徽章/极小标签：`rounded-lg` (8px) 或 `rounded-full`。
-   - **暗黑模式微晶层级深度（Dark Mode Surface Elevation）**：
+   - **暗黑模式微晶层级与设备色阶容错（Dark Elevation & Screen Contrast Fallback）**：
      - **严禁全屏死黑（Pure #000000）！** 死黑会导致容器与背景粘成一片、丢失立体空间；
-     - 采用现代微晶层叠体系：
+     - **★ 老旧/普通 1080p 屏幕色阶容错铁律（WCAG 2.1 Non-Text Contrast）**：
+       - 高端 4K/Retina/OLED 屏幕对比度高，容易辨识微弱灰阶；但大量普通 1080p 办公显示器（低色域 TN/VA/IPS）暗部伽马严重压缩（Black Crush），如果使用过弱边框（如 `border-neutral-800`），卡片轮廓会彻底糊成一团黑！
+       - **强制规范**：暗黑模式卡片外轮廓边框必须强化至 **`dark:border-neutral-700/80` 或 `dark:border-white/10`**，确保在老旧低色域屏幕上依然拥有清晰分明的空间边缘轮廓；
+     - 现代微晶层叠体系：
        - 底层画布基底：`bg-neutral-950` (#0a0a0a)；
-       - 一级卡片容器：`bg-white dark:bg-neutral-900/80`，搭配半透明微边框 `border border-neutral-200/80 dark:border-neutral-800/80`；
-       - 二级嵌套面板/输入框内衬：`bg-neutral-50 dark:bg-neutral-950/60`；
+       - 一级卡片容器：`bg-white dark:bg-neutral-900`，搭配清晰微边框 `border border-neutral-200/80 dark:border-neutral-700/80`；
+       - 二级嵌套面板/输入框内衬：`bg-neutral-50 dark:bg-neutral-950/60 border border-neutral-200/60 dark:border-neutral-800`；
        - 浮层/弹窗：叠加 `backdrop-blur-md shadow-2xl`。
    - **行动按钮三级层级体系（Button Action Hierarchy）**：
      - **Primary（主行动点）**：全屏仅允许 1~2 个最关键的高饱和实色大按钮（如开始计时、创建任务、跳跃），吸引绝对视线；
@@ -178,7 +181,21 @@ AI 必须极其果断、一次性完成以下清理，不留任何死角：
    - 去除移动端点击高亮暗影：`-webkit-tap-highlight-color: transparent;`。
    - 所有按钮与卡片必须具有触控反馈：`active:scale-[0.97] transition-all duration-150`。
    - 界面圆角推荐：卡片 `rounded-2xl`，按钮 `rounded-xl`，弹窗 `rounded-3xl`。
-5. **深浅色主题：全局联动 + 独立覆盖架构（Global Cascading with Local Override）**：
+5. **深浅色主题：全局联动 + 独立覆盖 + 防白闪架构（Zero-FOUC Cascading Theme）**：
+   - **★ 页面防白闪铁律（Zero-FOUC Preloader）**：
+     - **常见恶性体验**：刷新页面时，先显示 0.2 秒白屏然后再突然变黑（FOUC 视觉白闪，刺眼难受）；
+     - **强制标准实现**：所有页面（大厅与微应用）的 `<head>` 最顶端，必须内联执行极简同步预加载脚本，在 DOM 树与样式渲染前先行打上 `.dark` 标记：
+       ```html
+       <script>
+         (function() {
+           try {
+             var mode = localStorage.getItem('pwabox_<app>_theme') || localStorage.getItem('pwabox_theme_global') || 'system';
+             var isDark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+             if (isDark) document.documentElement.classList.add('dark');
+           } catch (e) {}
+         })();
+       </script>
+       ```
    - **★ 全局联动体验机制**：
      - 用户在导航大厅切换深浅色时，必须作为全局基准（`pwabox_theme_global`），并瞬时广播同步给所有已注册的微应用；
      - 微应用加载时，优先读取自身独立的 `pwabox_<tool-name>_theme`，若未独立手动设置过，**必须无缝自动继承大厅的全局基准 `pwabox_theme_global`**（保证用户在首页切深色，点进任何小工具深浅色完全一致！）；
