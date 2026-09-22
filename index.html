@@ -46,14 +46,6 @@
       padding-top: env(safe-area-inset-top);
       padding-bottom: env(safe-area-inset-bottom);
     }
-    .app-card.dragging {
-      opacity: 0.35;
-      transform: scale(0.97);
-    }
-    .app-card.drag-over {
-      border-color: #6366f1 !important;
-      transform: translateY(-2px);
-    }
   </style>
 </head>
 <body class="bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 min-h-screen transition-colors duration-200">
@@ -69,9 +61,9 @@
         <div>
           <h1 class="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2">
             PWABox
-            <span id="appCount" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-neutral-200/70 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">2</span>
+            <span id="appCount" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-neutral-200/70 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">3</span>
           </h1>
-          <p class="text-xs text-neutral-400 dark:text-neutral-500">免编译 · 独立离线 PWA · 支持拖拽排序</p>
+          <p class="text-xs text-neutral-400 dark:text-neutral-500">免编译 · 极简独立 PWA 百宝箱</p>
         </div>
       </div>
 
@@ -92,6 +84,13 @@
             </kbd>
           </div>
         </div>
+
+        <!-- 视图模式切换（大卡片 ⇋ 手机 App 小图标） -->
+        <button id="viewModeToggleBtn" class="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-700/80 text-neutral-600 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 active:scale-95 transition-all shadow-sm" title="切换视图模式 (大卡片 / App小图标)">
+          <span id="viewModeIconBox" class="flex items-center justify-center">
+            <i data-lucide="layout-grid" class="w-4 h-4"></i>
+          </span>
+        </button>
 
         <!-- 复制 AI 扩充指令 -->
         <button id="copyPromptBtn" class="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-700/80 text-neutral-600 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 active:scale-95 transition-all shadow-sm" title="复制让 AI 新增工具的指令">
@@ -132,34 +131,12 @@
             </button>
           </div>
         </div>
-
-        <!-- GitHub 仓库入口 -->
-        <a href="https://github.com/MaYunFei/PWABox" target="_blank" rel="noopener noreferrer" class="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-700/80 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white active:scale-[0.97] transition-all shadow-xs flex items-center justify-center" title="在 GitHub 查看源码 / Star">
-          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
-            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-          </svg>
-        </a>
       </div>
     </header>
 
-    <!-- 顶部状态栏与管家式提示 -->
-    <div class="mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-neutral-400 dark:text-neutral-500">
-      <div class="flex items-center gap-2">
-        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-mono text-[11px]">
-          <span id="appCount">3</span> 个微应用可用
-        </span>
-        <span class="hidden md:inline text-neutral-300 dark:text-neutral-700">·</span>
-        <span class="hidden md:inline">由 AI 智能编排默认顺序</span>
-      </div>
-      <div class="text-[11px] text-neutral-400 flex items-center gap-1.5">
-        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
-        <span>自带示例供体验参考，拥有自己的工具后可随时让 AI 彻底删除</span>
-      </div>
-    </div>
-
-    <!-- 核心微应用卡片展示区：普通屏 2-3 列，2K/4K 宽屏自适应 4 列，气势磅礴 -->
+    <!-- 核心微应用展示区：支持大卡片与手机 App 小图标双模切换 -->
     <main class="flex-1">
-      <div id="appsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-5 sm:gap-6"></div>
+      <div id="appsGrid"></div>
 
       <!-- 搜索无结果占位 -->
       <div id="emptyState" class="hidden py-24 text-center">
@@ -258,6 +235,31 @@
     ];
 
     const USER_STATE_KEY = "pwabox_user_preferences";
+    const VIEW_MODE_KEY = "pwabox_view_mode";
+
+    let currentViewMode = localStorage.getItem(VIEW_MODE_KEY) || "card"; // 'card' | 'grid'
+
+    function toggleViewMode() {
+      currentViewMode = currentViewMode === 'card' ? 'grid' : 'card';
+      localStorage.setItem(VIEW_MODE_KEY, currentViewMode);
+      renderApps();
+      updateViewModeUI();
+      showToast(currentViewMode === 'grid' ? '已切换至：手机 App 小图标视图' : '已切换至：详细大卡片视图');
+    }
+
+    function updateViewModeUI() {
+      const btn = document.getElementById("viewModeToggleBtn");
+      const iconBox = document.getElementById("viewModeIconBox");
+      if (!btn || !iconBox) return;
+      if (currentViewMode === 'grid') {
+        btn.title = "切换为详细大卡片视图";
+        iconBox.innerHTML = '<i data-lucide="layout-list" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>';
+      } else {
+        btn.title = "切换为手机 App 小图标视图";
+        iconBox.innerHTML = '<i data-lucide="layout-grid" class="w-4 h-4 text-neutral-600 dark:text-neutral-400"></i>';
+      }
+      lucide.createIcons({ root: iconBox });
+    }
 
     function getUserPreferences() {
       try {
@@ -394,61 +396,103 @@
         emptyState.classList.remove("hidden");
       } else {
         emptyState.classList.add("hidden");
-        grid.innerHTML = filtered.map(app => `
-          <a 
-            href="${app.path}"
-            data-id="${app.id}"
-            class="app-card group relative flex flex-col justify-between p-6 rounded-2xl bg-white dark:bg-neutral-900/80 border ${
-              app.isPinned ? 'border-amber-400 dark:border-amber-500/60 shadow-md' : 'border-neutral-200/80 dark:border-neutral-800/80 shadow-xs'
-            } hover:border-indigo-500/60 dark:hover:border-indigo-500/50 hover:shadow-xl transition-all duration-150 cursor-pointer block no-underline"
-          >
-            <div>
-              <div class="flex items-start justify-between gap-3 mb-4">
-                <img src="${app.icon}" alt="${app.name}" class="w-14 h-14 rounded-2xl shadow-xs group-hover:scale-105 transition-transform flex-shrink-0 pointer-events-none">
+
+        if (currentViewMode === 'grid') {
+          // 手机 App 小图标网格视图（密集排布、居中大图标、下配紧凑单行名称）
+          grid.className = "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 2xl:grid-cols-12 gap-x-3 gap-y-6 sm:gap-x-6 sm:gap-y-8 justify-items-center py-2";
+          grid.innerHTML = filtered.map(app => `
+            <a 
+              href="${app.path}"
+              data-id="${app.id}"
+              class="group flex flex-col items-center text-center w-full max-w-[96px] sm:max-w-[112px] cursor-pointer no-underline relative select-none"
+            >
+              <!-- 手机 App 质感图标外壳 -->
+              <div class="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl p-3 bg-white dark:bg-neutral-900 border ${
+                app.isPinned ? 'border-amber-400 dark:border-amber-500/80 shadow-md ring-2 ring-amber-400/20' : 'border-neutral-200/80 dark:border-neutral-700/80 shadow-xs'
+              } group-hover:shadow-xl group-hover:scale-105 group-hover:border-indigo-500/60 dark:group-hover:border-indigo-500/50 active:scale-95 transition-all duration-150 flex items-center justify-center">
                 
-                <div class="flex items-center gap-1.5" onclick="event.preventDefault()">
-                  ${app.isPinned ? `
-                    <span class="text-[11px] px-2 py-0.5 rounded-lg bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700/60 font-semibold">
-                      已置顶
-                    </span>
-                  ` : ''}
+                <img src="${app.icon}" alt="${app.name}" class="w-full h-full object-contain pointer-events-none">
+                
+                ${app.isPinned ? `
+                  <span class="absolute -top-1.5 -right-1.5 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-400 text-amber-950 flex items-center justify-center text-[9px] sm:text-[10px] shadow-sm font-bold">★</span>
+                ` : ''}
 
-                  <!-- 隐藏应用按钮 -->
-                  <button 
-                    onclick="hideApp('${app.id}', event)" 
-                    class="p-1.5 rounded-lg text-neutral-300 dark:text-neutral-600 sm:opacity-0 sm:group-hover:opacity-100 hover:text-red-500 dark:hover:text-red-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-[0.9] transition-all" 
-                    title="隐藏此应用 (可在底部随时恢复)"
-                  >
-                    <i data-lucide="eye-off" class="w-4 h-4"></i>
+                <!-- 悬浮微型快捷控制按钮 -->
+                <div class="absolute -top-2 -left-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 z-10" onclick="event.preventDefault()">
+                  <button onclick="togglePin('${app.id}', event)" class="p-1 rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-400 hover:text-amber-500 shadow-xs active:scale-90" title="${app.isPinned ? '取消置顶' : '置顶'}">
+                    <i data-lucide="star" class="w-3 h-3 ${app.isPinned ? 'fill-current text-amber-500' : ''}"></i>
                   </button>
-
-                  <!-- ⭐️ 星标置顶按钮 -->
-                  <button 
-                    onclick="togglePin('${app.id}', event)" 
-                    class="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-[0.9] transition-all ${
-                      app.isPinned ? 'text-amber-500 fill-amber-500' : 'text-neutral-300 hover:text-amber-400'
-                    }" 
-                    title="${app.isPinned ? '取消置顶' : '置顶为常用'}"
-                  >
-                    <i data-lucide="star" class="w-4 h-4 ${app.isPinned ? 'fill-current' : ''}"></i>
+                  <button onclick="hideApp('${app.id}', event)" class="p-1 rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-400 hover:text-red-500 shadow-xs active:scale-90" title="隐藏">
+                    <i data-lucide="eye-off" class="w-3 h-3"></i>
                   </button>
                 </div>
               </div>
-              
-              <h2 class="text-lg font-bold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-2">
-                ${app.name}
-              </h2>
-              <p class="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed line-clamp-2">
-                ${app.desc}
-              </p>
-            </div>
 
-            <div class="mt-6 pt-3 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-              <span class="font-medium">启动应用</span>
-              <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
-            </div>
-          </a>
-        `).join("");
+              <!-- 紧凑应用名称 -->
+              <span class="mt-2 text-xs sm:text-sm font-semibold text-neutral-800 dark:text-neutral-200 truncate w-full group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                ${app.name}
+              </span>
+            </a>
+          `).join("");
+        } else {
+          // 详细大卡片视图
+          grid.className = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-5 sm:gap-6";
+          grid.innerHTML = filtered.map(app => `
+            <a 
+              href="${app.path}"
+              data-id="${app.id}"
+              class="app-card group relative flex flex-col justify-between p-6 rounded-2xl bg-white dark:bg-neutral-900 border ${
+                app.isPinned ? 'border-amber-400 dark:border-amber-500/80 shadow-md ring-1 ring-amber-400/20' : 'border-neutral-200/80 dark:border-neutral-700/80 shadow-xs'
+              } hover:border-indigo-500/60 dark:hover:border-indigo-500/50 hover:shadow-xl transition-all duration-150 cursor-pointer block no-underline"
+            >
+              <div>
+                <div class="flex items-start justify-between gap-3 mb-4">
+                  <img src="${app.icon}" alt="${app.name}" class="w-14 h-14 rounded-2xl shadow-xs group-hover:scale-105 transition-transform flex-shrink-0 pointer-events-none">
+                  
+                  <div class="flex items-center gap-1.5" onclick="event.preventDefault()">
+                    ${app.isPinned ? `
+                      <span class="text-[11px] px-2 py-0.5 rounded-lg bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700/60 font-semibold">
+                        已置顶
+                      </span>
+                    ` : ''}
+
+                    <!-- 隐藏应用按钮 -->
+                    <button 
+                      onclick="hideApp('${app.id}', event)" 
+                      class="p-1.5 rounded-lg text-neutral-300 dark:text-neutral-600 sm:opacity-0 sm:group-hover:opacity-100 hover:text-red-500 dark:hover:text-red-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-[0.9] transition-all" 
+                      title="隐藏此应用 (可在底部随时恢复)"
+                    >
+                      <i data-lucide="eye-off" class="w-4 h-4"></i>
+                    </button>
+
+                    <!-- ⭐️ 星标置顶按钮 -->
+                    <button 
+                      onclick="togglePin('${app.id}', event)" 
+                      class="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-[0.9] transition-all ${
+                        app.isPinned ? 'text-amber-500 fill-amber-500' : 'text-neutral-300 hover:text-amber-400'
+                      }" 
+                      title="${app.isPinned ? '取消置顶' : '置顶为常用'}"
+                    >
+                      <i data-lucide="star" class="w-4 h-4 ${app.isPinned ? 'fill-current' : ''}"></i>
+                    </button>
+                  </div>
+                </div>
+                
+                <h2 class="text-lg font-bold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-2">
+                  ${app.name}
+                </h2>
+                <p class="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed line-clamp-2">
+                  ${app.desc}
+                </p>
+              </div>
+
+              <div class="mt-6 pt-3 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs text-neutral-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                <span class="font-medium">启动应用</span>
+                <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+              </div>
+            </a>
+          `).join("");
+        }
       }
 
       // 更新在屏计数与隐藏管理入口
@@ -624,7 +668,13 @@
       deferredPrompt = null;
     });
 
+    const viewModeToggleBtn = document.getElementById("viewModeToggleBtn");
+    if (viewModeToggleBtn) {
+      viewModeToggleBtn.addEventListener("click", toggleViewMode);
+    }
+
     applyTheme();
+    updateViewModeUI();
     renderApps();
   </script>
 </body>
