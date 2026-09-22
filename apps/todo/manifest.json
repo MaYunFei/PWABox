@@ -1,0 +1,19 @@
+{
+  "name": "轻记待办 - PWABox",
+  "short_name": "轻记待办",
+  "description": "极简任务清单，支持离线记录与本地数据备份",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0284c7",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

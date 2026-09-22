@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>极简番茄钟 - PWABox</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <meta name="theme-color" content="#ef4444">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    /* 独立安装为桌面/手机 App 运行时，彻底隐藏返回大厅与安装按钮 */
+    @media (display-mode: standalone) {
+      .standalone-hidden {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 h-[100dvh] overflow-hidden flex flex-col justify-between transition-colors duration-200">
+
+  <!-- 自适应顶层：与大厅保持 100% 容器宽度一致 (max-w-7xl 2xl:max-w-[1680px])，告别跳变割裂 -->
+  <div class="max-w-7xl 2xl:max-w-[1680px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-3 sm:py-6 md:py-8 flex-1 flex flex-col justify-between md:justify-start min-h-0 overflow-hidden">
+    
+    <!-- 顶部操作栏 -->
+    <header class="flex items-center justify-between pb-3 border-b border-neutral-200/80 dark:border-neutral-900">
+      <div class="flex items-center gap-3">
+        <!-- 返回大厅按钮（独立 App 模式下自动隐藏） -->
+        <a href="../../index.html" class="standalone-hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-xs font-semibold active:scale-95 transition-all shadow-sm">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          <span>返回大厅</span>
+        </a>
+        <div class="standalone-hidden h-4 w-px bg-neutral-200 dark:bg-neutral-800 hidden sm:block"></div>
+        <span class="text-sm font-bold text-neutral-800 dark:text-neutral-200">极简番茄钟</span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span class="hidden sm:inline text-xs text-neutral-400 font-mono mr-2">按 [空格] 启停 · [R] 重置</span>
+
+        <!-- 移动端专属配置弹窗触发按钮 -->
+        <button id="mobileSettingsBtn" class="md:hidden p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-95 transition-all shadow-sm" title="调节时长">
+          <i data-lucide="sliders" class="w-4 h-4 text-neutral-500"></i>
+        </button>
+
+        <!-- 独立安装按钮（在独立 App 模式下自动隐藏） -->
+        <button id="installAppBtn" class="standalone-hidden hidden items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20 text-xs font-semibold active:scale-95 transition-all">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          <span>独立安装</span>
+        </button>
+
+        <!-- ★ 独立深浅色控制浮窗（纯净图标） -->
+        <div class="relative">
+          <button id="themeToggleBtn" class="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-95 transition-all shadow-sm" title="外观设置">
+            <i id="themeIcon" data-lucide="monitor" class="w-4 h-4 text-red-500"></i>
+          </button>
+
+          <div id="themeMenu" class="hidden absolute right-0 mt-2 w-44 p-1.5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-xl z-50 text-xs space-y-0.5">
+            <button onclick="setThemeMode('system')" id="themeOptSystem" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+              <span class="flex items-center gap-2">
+                <i data-lucide="monitor" class="w-4 h-4"></i> 跟随系统
+              </span>
+              <i data-lucide="check" class="w-3.5 h-3.5 check-icon text-red-500 hidden"></i>
+            </button>
+            <button onclick="setThemeMode('light')" id="themeOptLight" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+              <span class="flex items-center gap-2">
+                <i data-lucide="sun" class="w-4 h-4"></i> 手动浅色
+              </span>
+              <i data-lucide="check" class="w-3.5 h-3.5 check-icon text-red-500 hidden"></i>
+            </button>
+            <button onclick="setThemeMode('dark')" id="themeOptDark" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+              <span class="flex items-center gap-2">
+                <i data-lucide="moon" class="w-4 h-4"></i> 手动深色
+              </span>
+              <i data-lucide="check" class="w-3.5 h-3.5 check-icon text-red-500 hidden"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 主体区域：手机严格居中单屏，PC (md及以上) 双栏并排居于视觉黄金分割点（偏上居中） -->
+    <main class="grid grid-cols-1 md:grid-cols-12 gap-6 2xl:gap-12 my-auto md:my-0 md:mt-5 2xl:mt-8 items-start flex-1 min-h-0">
+      
+      <!-- 主表盘与核心控制区 -->
+      <div class="md:col-span-7 flex flex-col items-center justify-center text-center p-6 sm:p-10 2xl:p-14 rounded-2xl bg-white dark:bg-neutral-900/80 border border-neutral-200/80 dark:border-neutral-800/80 shadow-sm dark:shadow-xl backdrop-blur-sm">
+        <!-- 模式切换 Pills (8pt 空间 + 同心圆角) -->
+        <div class="inline-flex p-1 rounded-xl bg-neutral-100 dark:bg-neutral-950/80 border border-neutral-200/80 dark:border-neutral-800 mb-6 sm:mb-8">
+          <button id="modeWork" class="px-4 sm:px-5 py-2 rounded-lg text-xs font-semibold transition-all duration-150 bg-red-500 text-white shadow-xs active:scale-[0.97]">
+            专注
+          </button>
+          <button id="modeShort" class="px-4 sm:px-5 py-2 rounded-lg text-xs font-semibold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all duration-150 active:scale-[0.97]">
+            短休
+          </button>
+          <button id="modeLong" class="px-4 sm:px-5 py-2 rounded-lg text-xs font-semibold text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-all duration-150 active:scale-[0.97]">
+            长休
+          </button>
+        </div>
+
+        <!-- 时间大数字 (4K 屏超大字号，纯正 Typographic Hierarchy) -->
+        <div class="relative flex items-center justify-center my-2 sm:my-4">
+          <span id="timerDisplay" class="text-7xl sm:text-8xl md:text-9xl 2xl:text-[10rem] font-black tracking-tighter font-mono text-neutral-900 dark:text-white select-none">
+            25:00
+          </span>
+        </div>
+
+        <!-- 主控制按钮群 (Primary 实色 + Secondary 灰底，active:scale-[0.97]) -->
+        <div class="flex items-center gap-4 mt-5 sm:mt-6">
+          <button id="toggleBtn" class="px-8 py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-base shadow-lg shadow-red-500/25 active:scale-[0.97] transition-all duration-150 flex items-center gap-2.5">
+            <span id="toggleIconBox" class="flex items-center justify-center">
+              <i data-lucide="play" class="w-5 h-5 fill-current"></i>
+            </span>
+            <span id="toggleText">开始专注</span>
+          </button>
+          <button id="resetBtn" class="p-3.5 rounded-xl bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-600 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white active:scale-[0.97] transition-all duration-150" title="重置计时 (快捷键: R)">
+            <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+          </button>
+        </div>
+
+        <!-- 手机端紧凑型今日统计胶囊（免滚动直达，克制单色） -->
+        <div class="md:hidden mt-6 flex items-center gap-3 text-xs text-neutral-500 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-950/60 px-4 py-2 rounded-xl border border-neutral-200/60 dark:border-neutral-800">
+          <span>今日已完成 <strong id="todayCountMobile" class="text-red-500 font-bold">0</strong> 个</span>
+          <span class="text-neutral-300 dark:text-neutral-700">·</span>
+          <span>共专注 <strong id="todayMinutesMobile" class="text-neutral-800 dark:text-neutral-200 font-bold">0</strong> 分钟</span>
+        </div>
+      </div>
+
+      <!-- 右栏：PC 宽屏常驻展示看板与滑块调节（同心圆角 rounded-2xl + 内层 rounded-xl） -->
+      <div class="hidden md:block md:col-span-5 space-y-4">
+        
+        <!-- 今日数据看板 -->
+        <div class="p-5 rounded-2xl bg-white dark:bg-neutral-900/80 border border-neutral-200/80 dark:border-neutral-800/80 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="bar-chart-2" class="w-4 h-4 text-red-500"></i>
+              今日专注看板
+            </h3>
+            <button id="clearStatsBtn" class="text-xs text-neutral-400 hover:text-red-500 transition-colors">
+              清空
+            </button>
+          </div>
+          
+          <div class="grid grid-cols-2 gap-3">
+            <div class="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-950/60 border border-neutral-200/60 dark:border-neutral-800">
+              <div class="text-xs text-neutral-400">已完成番茄</div>
+              <div class="text-2xl font-black text-red-500 mt-1"><span id="todayCount">0</span> <span class="text-xs font-normal text-neutral-400">个</span></div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-neutral-50 dark:bg-neutral-950/60 border border-neutral-200/60 dark:border-neutral-800">
+              <div class="text-xs text-neutral-400">累计专注</div>
+              <div class="text-2xl font-black text-neutral-800 dark:text-white mt-1"><span id="todayMinutes">0</span> <span class="text-xs font-normal text-neutral-400">分钟</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 桌面级时长个性化配置 -->
+        <div class="p-5 rounded-2xl bg-white dark:bg-neutral-900/80 border border-neutral-200/80 dark:border-neutral-800/80 shadow-sm">
+          <h3 class="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider mb-4 flex items-center gap-1.5">
+            <i data-lucide="sliders" class="w-4 h-4 text-red-500"></i>
+            时长调节 (分钟)
+          </h3>
+          
+          <div class="space-y-4 text-xs">
+            <div>
+              <div class="flex justify-between mb-1 text-neutral-600 dark:text-neutral-300 font-medium">
+                <span>专注时长</span>
+                <span id="workDurationVal" class="font-bold text-red-500">25 分钟</span>
+              </div>
+              <input type="range" id="workSlider" min="5" max="60" step="5" value="25" class="w-full accent-red-500 cursor-pointer">
+            </div>
+
+            <div>
+              <div class="flex justify-between mb-1 text-neutral-600 dark:text-neutral-300 font-medium">
+                <span>短休息时长</span>
+                <span id="shortDurationVal" class="font-bold text-neutral-700 dark:text-neutral-200">5 分钟</span>
+              </div>
+              <input type="range" id="shortSlider" min="1" max="15" step="1" value="5" class="w-full accent-neutral-500 cursor-pointer">
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+    <!-- 底部状态 -->
+    <footer class="pt-3 pb-1 border-t border-neutral-200/80 dark:border-neutral-900 text-center text-xs text-neutral-400 flex items-center justify-between">
+      <span>极简番茄钟 · PWABox</span>
+      <span class="hidden sm:inline">跟随系统 / 支持手动切换外观</span>
+      <button id="clearStatsBtnMobile" class="md:hidden text-xs text-neutral-400 hover:text-red-500">清空今日统计</button>
+    </footer>
+
+  </div>
+
+  <!-- 手机端轻量设置弹窗 (保证主界面 100% 零滚动条) -->
+  <div id="settingsModal" class="hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+    <div class="w-full max-w-sm bg-white dark:bg-neutral-900 rounded-3xl p-6 border border-neutral-200 dark:border-neutral-800 shadow-2xl animate-in fade-in duration-200">
+      <div class="flex items-center justify-between mb-5">
+        <h3 class="text-sm font-bold text-neutral-900 dark:text-white flex items-center gap-2">
+          <i data-lucide="sliders" class="w-4 h-4 text-red-500"></i>
+          时长设置
+        </h3>
+        <button id="closeSettingsBtn" class="p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-xs">
+        <div>
+          <div class="flex justify-between mb-1 text-neutral-600 dark:text-neutral-300 font-medium">
+            <span>专注时长</span>
+            <span id="workDurationValMobile" class="font-bold text-red-500">25 分钟</span>
+          </div>
+          <input type="range" id="workSliderMobile" min="5" max="60" step="5" value="25" class="w-full accent-red-500 cursor-pointer">
+        </div>
+
+        <div>
+          <div class="flex justify-between mb-1 text-neutral-600 dark:text-neutral-300 font-medium">
+            <span>短休息时长</span>
+            <span id="shortDurationValMobile" class="font-bold text-neutral-700 dark:text-neutral-200">5 分钟</span>
+          </div>
+          <input type="range" id="shortSliderMobile" min="1" max="15" step="1" value="5" class="w-full accent-neutral-500 cursor-pointer">
+        </div>
+      </div>
+
+      <button id="confirmSettingsBtn" class="mt-6 w-full py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-xs active:scale-[0.97] transition-all duration-150 shadow-sm">
+        完成
+      </button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

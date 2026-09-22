@@ -1,0 +1,18 @@
+{
+  "name": "断网小恐龙",
+  "short_name": "恐龙跑酷",
+  "description": "Chrome 经典离线小恐龙跑酷，纯纯的无网情怀与摸鱼神器",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

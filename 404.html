@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>页面未找到 · 正在返回首页 - PWABox</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            neutral: {
+              850: '#1e1e1e',
+              950: '#0a0a0a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+</head>
+<body class="bg-neutral-50 dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 h-full flex items-center justify-center p-4 select-none transition-colors duration-200">
+
+  <div class="max-w-md w-full text-center p-8 sm:p-10 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-2xl space-y-6">
+    
+    <!-- 404 灵动图标 -->
+    <div class="relative w-20 h-20 mx-auto rounded-3xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-100 dark:border-indigo-900/60 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+      <i data-lucide="compass" class="w-10 h-10 animate-spin-slow"></i>
+      <span class="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-[10px] font-mono font-black shadow-sm">
+        404
+      </span>
+    </div>
+
+    <!-- 提示文案 -->
+    <div class="space-y-2">
+      <h1 class="text-xl sm:text-2xl font-black tracking-tight text-neutral-900 dark:text-white">
+        页面好像迷路了
+      </h1>
+      <p class="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 leading-relaxed">
+        您访问的链接可能已迁移、被隐藏或不存在。<br>
+        将在 <span id="countdown" class="font-bold text-indigo-600 dark:text-indigo-400 font-mono text-base">3</span> 秒后自动安全返回百宝箱首页。
+      </p>
+    </div>
+
+    <!-- 进度条 -->
+    <div class="w-full bg-neutral-100 dark:bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+      <div id="progressBar" class="bg-indigo-600 dark:bg-indigo-400 h-full w-full transition-all duration-1000 ease-linear"></div>
+    </div>
+
+    <!-- 操作按钮 -->
+    <div class="pt-2 flex flex-col sm:flex-row gap-3">
+      <a href="./index.html" id="homeLink" class="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-600/20 active:scale-95 transition-all">
+        <i data-lucide="home" class="w-4 h-4"></i>
+        <span>立即返回首页</span>
+      </a>
+    </div>
+
+    <!-- 底部状态 -->
+    <div class="text-[11px] font-mono text-neutral-400 flex items-center justify-center gap-2">
+      <a href="https://github.com/MaYunFei/PWABox" target="_blank" rel="noopener noreferrer" class="hover:text-neutral-900 dark:hover:text-white transition-colors flex items-center gap-1">
+        <span>PWABox</span>
+      </a>
+      <span class="opacity-30">·</span>
+      <span>智能容错自愈系统</span>
+    </div>
+
+  </div>
+
+  <style>
+    @keyframes spinSlow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .animate-spin-slow {
+      animation: spinSlow 12s linear infinite;
+    }
+  </style>
+
+  <script>
+    // 同步深浅色外观
+    function syncTheme() {
+      const saved = localStorage.getItem('pwabox_theme_mode') || 'system';
+      const isDark = saved === 'dark' || (saved === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+    syncTheme();
+
+    // 智能计算根目录首页地址（兼顾二级路径与 Cloudflare Pages 根目录）
+    function getHubUrl() {
+      // 无论在什么深层路径下 404，都回退到根目录 index.html
+      const origin = window.location.origin;
+      const pathname = window.location.pathname;
+      
+      // 如果是在某个子目录内报错，尝试定位到 PWABox 根
+      return origin + '/index.html';
+    }
+
+    const targetUrl = getHubUrl();
+    const homeLink = document.getElementById('homeLink');
+    if (homeLink) homeLink.href = targetUrl;
+
+    // 倒计时 3 秒后自动跳转
+    let timeLeft = 3;
+    const countdownEl = document.getElementById('countdown');
+    const progressBar = document.getElementById('progressBar');
+
+    const timer = setInterval(() => {
+      timeLeft--;
+      if (countdownEl) countdownEl.textContent = timeLeft;
+      if (progressBar) {
+        progressBar.style.width = `${(timeLeft / 3) * 100}%`;
+      }
+
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        window.location.replace(targetUrl);
+      }
+    }, 1000);
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>

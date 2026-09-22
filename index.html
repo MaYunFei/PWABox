@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>PWABox - 微应用百宝箱</title>
+  <meta name="description" content="免编译、零依赖、独立可安装的个人 PWA 微应用中心">
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PWABox">
+
+  <!-- 国内高速 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .app-card.dragging {
+      opacity: 0.35;
+      transform: scale(0.97);
+    }
+    .app-card.drag-over {
+      border-color: #6366f1 !important;
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body class="bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 min-h-screen transition-colors duration-200">
+
+  <!-- 自适应顶层容器：从手机到 4K 超宽屏自适应延展，拒绝无效留白 -->
+  <div class="max-w-7xl 2xl:max-w-[1680px] w-full mx-auto px-4 sm:px-6 lg:px-10 2xl:px-14 py-5 sm:py-8 flex flex-col min-h-screen">
+    
+    <!-- 顶部紧凑导航栏 -->
+    <header class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pb-4 mb-6 border-b border-neutral-200/80 dark:border-neutral-800">
+      <!-- 品牌区域 -->
+      <div class="flex items-center gap-3">
+        <img src="icon.svg" alt="PWABox Logo" class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl shadow-md shadow-indigo-500/20 active:scale-95 transition-transform flex-shrink-0">
+        <div>
+          <h1 class="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2">
+            PWABox
+            <span id="appCount" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-neutral-200/70 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">2</span>
+          </h1>
+          <p class="text-xs text-neutral-400 dark:text-neutral-500">免编译 · 独立离线 PWA · 支持拖拽排序</p>
+        </div>
+      </div>
+
+      <!-- 搜索栏与操作工具群（整合在顶部，不额外占一行） -->
+      <div class="flex items-center gap-2.5">
+        <!-- 紧凑搜索框（支持快捷键 / 与 ⌘K） -->
+        <div class="relative flex-1 sm:w-64">
+          <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400"></i>
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="搜索应用..." 
+            class="w-full pl-8 pr-12 py-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-sm"
+          >
+          <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+            <kbd id="searchKbd" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 border border-neutral-200/80 dark:border-neutral-700 shadow-2xs">
+              /
+            </kbd>
+          </div>
+        </div>
+
+        <!-- 复制 AI 扩充指令 -->
+        <button id="copyPromptBtn" class="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-indigo-600 dark:hover:text-indigo-400 active:scale-95 transition-all shadow-sm" title="复制让 AI 新增工具的指令">
+          <i data-lucide="sparkles" class="w-4 h-4"></i>
+        </button>
+
+        <!-- PWA 安装引导按钮 -->
+        <button id="installBtn" class="hidden items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm active:scale-95 transition-all">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">安装大厅</span>
+        </button>
+
+        <!-- 外观主题控制按钮（纯净图标，点击弹出菜单） -->
+        <div class="relative">
+          <button id="themeToggleBtn" class="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-95 transition-all shadow-sm" title="外观设置">
+            <i id="themeIcon" data-lucide="monitor" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+          </button>
+
+          <!-- 现代微浮层菜单 -->
+          <div id="themeMenu" class="hidden absolute right-0 mt-2 w-44 p-1.5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-xl z-50 text-xs space-y-0.5">
+            <button onclick="setThemeMode('system')" id="themeOptSystem" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+              <span class="flex items-center gap-2">
+                <i data-lucide="monitor" class="w-4 h-4"></i> 跟随系统
+              </span>
+              <i data-lucide="check" class="w-3.5 h-3.5 check-icon text-indigo-600 dark:text-indigo-400 hidden"></i>
+            </button>
+            <button onclick="setThemeMode('light')" id="themeOptLight" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+              <span class="flex items-center gap-2">
+                <i data-lucide="sun" class="w-4 h-4"></i> 手动浅色
+              </span>
+              <i data-lucide="check" class="w-3.5 h-3.5 check-icon text-indigo-600 dark:text-indigo-400 hidden"></i>
+            </button>
+            <button onclick="setThemeMode('dark')" id="themeOptDark" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+              <span class="flex items-center gap-2">
+                <i data-lucide="moon" class="w-4 h-4"></i> 手动深色
+              </span>
+              <i data-lucide="check" class="w-3.5 h-3.5 check-icon text-indigo-600 dark:text-indigo-400 hidden"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- GitHub 仓库入口 -->
+        <a href="https://github.com/MaYunFei/PWABox" target="_blank" rel="noopener noreferrer" class="p-2 rounded-xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white active:scale-[0.97] transition-all shadow-xs flex items-center justify-center" title="在 GitHub 查看源码 / Star">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+        </a>
+      </div>
+    </header>
+
+    <!-- 核心微应用卡片展示区：普通屏 2-3 列，2K/4K 宽屏自适应 4-5 列，气势磅礴 -->
+    <main class="flex-1">
+      <div id="appsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-5 sm:gap-6"></div>
+
+      <!-- 搜索无结果占位 -->
+      <div id="emptyState" class="hidden py-24 text-center">
+        <div class="w-16 h-16 rounded-3xl bg-neutral-100 dark:bg-neutral-850 mx-auto flex items-center justify-center text-neutral-400 mb-3">
+          <i data-lucide="package-open" class="w-8 h-8"></i>
+        </div>
+        <p class="text-sm font-medium text-neutral-500 dark:text-neutral-400">没有找到匹配的微应用</p>
+      </div>
+    </main>
+
+    <!-- 底部辅助说明与隐藏应用管理入口 -->
+    <footer class="mt-12 pt-6 border-t border-neutral-200/80 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-neutral-400 dark:text-neutral-500">
+      <div class="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
+        <span class="flex items-center gap-1.5">
+          <i data-lucide="grip-vertical" class="w-3.5 h-3.5"></i>
+          按住卡片自由拖拽 · ⭐️ 置顶
+        </span>
+        <span class="hidden sm:inline opacity-30">|</span>
+        <button id="manageHiddenBtn" onclick="openHiddenModal()" class="hidden items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
+          <i data-lucide="eye-off" class="w-3.5 h-3.5"></i>
+          <span>已隐藏 <span id="hiddenCount">0</span> 个应用 (管理)</span>
+        </button>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="https://github.com/MaYunFei/PWABox" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 font-medium text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
+          <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          <span class="hover:underline">PWABox</span>
+        </a>
+        <span class="opacity-30">·</span>
+        <span>零构建微应用百宝箱</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- 已隐藏应用管理浮层 Modal -->
+  <div id="hiddenModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+    <div class="w-full max-w-sm rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 p-5 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-neutral-100 dark:border-neutral-800 mb-4">
+        <h3 class="font-bold text-sm text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+          <i data-lucide="eye-off" class="w-4 h-4 text-neutral-400"></i>
+          已隐藏的应用
+        </h3>
+        <button onclick="closeHiddenModal()" class="p-1 rounded-lg text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div id="hiddenAppsList" class="space-y-2 max-h-60 overflow-y-auto pr-1"></div>
+
+      <div class="mt-5 pt-3 border-t border-neutral-100 dark:border-neutral-800 flex items-center justify-between text-xs">
+        <button onclick="restoreAllHidden()" class="text-neutral-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+          全部恢复显示
+        </button>
+        <button onclick="closeHiddenModal()" class="px-4 py-1.5 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 active:scale-95 transition-all">
+          完成
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 轻量胶囊 Toast 提示 -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 translate-y-2 transition-all duration-300 flex items-center gap-2 px-4 py-2 rounded-2xl bg-neutral-900/90 dark:bg-white/90 text-white dark:text-neutral-900 text-xs font-medium shadow-xl backdrop-blur-md">
+    <i id="toastIcon" data-lucide="check" class="w-3.5 h-3.5 text-emerald-400 dark:text-emerald-600"></i>
+    <span id="toastMsg">提示信息</span>
+  </div>
+
+  <script>
+    // ==========================================
+    // 纯粹的微应用清单（去除所有冗余层级与无用分类）
+    // ==========================================
+    const INITIAL_APPS = [
+      {
+        id: "dino",
+        name: "断网小恐龙",
+        desc: "致敬 Chrome 经典离线跳跳乐，仙人掌与飞天翼龙障碍，纯原生 Canvas 街机摸鱼神器。",
+        path: "apps/dino/index.html",
+        icon: "apps/dino/icon.svg"
+      },
+      {
+        id: "pomodoro",
+        name: "极简番茄钟",
+        desc: "专注与休息节奏管理，PC 宽屏呈现沉浸大表盘与个性化时长调节，移动端沉浸全屏。",
+        path: "apps/pomodoro/index.html",
+        icon: "apps/pomodoro/icon.svg"
+      },
+      {
+        id: "todo",
+        name: "轻记待办",
+        desc: "极简任务清单，PC 端呈现专业桌面双栏与进度看板，支持一键 JSON 备份恢复。",
+        path: "apps/todo/index.html",
+        icon: "apps/todo/icon.svg"
+      }
+    ];
+
+    const USER_STATE_KEY = "pwabox_user_preferences";
+
+    function getUserPreferences() {
+      try {
+        const data = localStorage.getItem(USER_STATE_KEY);
+        return data ? JSON.parse(data) : { pinned: [], customOrder: [], hidden: [] };
+      } catch (e) {
+        return { pinned: [], customOrder: [], hidden: [] };
+      }
+    }
+
+    function saveUserPreferences(prefs) {
+      localStorage.setItem(USER_STATE_KEY, JSON.stringify(prefs));
+    }
+
+    let prefs = getUserPreferences();
+    if (!prefs.hidden) prefs.hidden = [];
+    let searchQuery = "";
+
+    function togglePin(appId, event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const idx = (prefs.pinned || []).indexOf(appId);
+      if (idx > -1) {
+        prefs.pinned.splice(idx, 1);
+        showToast("已取消置顶");
+      } else {
+        prefs.pinned.push(appId);
+        showToast("已置顶到最前");
+      }
+      saveUserPreferences(prefs);
+      renderApps();
+    }
+
+    function hideApp(appId, event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const app = INITIAL_APPS.find(a => a.id === appId);
+      if (!prefs.hidden.includes(appId)) {
+        prefs.hidden.push(appId);
+        saveUserPreferences(prefs);
+        renderApps();
+        showToast(`已隐藏「${app ? app.name : '应用'}」，可在底部随时恢复`);
+      }
+    }
+
+    function restoreApp(appId) {
+      prefs.hidden = (prefs.hidden || []).filter(id => id !== appId);
+      saveUserPreferences(prefs);
+      renderApps();
+      renderHiddenList();
+      const app = INITIAL_APPS.find(a => a.id === appId);
+      showToast(`已恢复「${app ? app.name : '应用'}」`);
+      if (prefs.hidden.length === 0) closeHiddenModal();
+    }
+
+    function restoreAllHidden() {
+      prefs.hidden = [];
+      saveUserPreferences(prefs);
+      renderApps();
+      closeHiddenModal();
+      showToast("已恢复全部隐藏应用");
+    }
+
+    function openHiddenModal() {
+      renderHiddenList();
+      document.getElementById("hiddenModal").classList.remove("hidden");
+    }
+
+    function closeHiddenModal() {
+      document.getElementById("hiddenModal").classList.add("hidden");
+    }
+
+    function renderHiddenList() {
+      const container = document.getElementById("hiddenAppsList");
+      const hiddenList = INITIAL_APPS.filter(a => (prefs.hidden || []).includes(a.id));
+      if (hiddenList.length === 0) {
+        container.innerHTML = `<div class="py-6 text-center text-xs text-neutral-400">暂无隐藏的应用</div>`;
+        return;
+      }
+      container.innerHTML = hiddenList.map(app => `
+        <div class="flex items-center justify-between p-2.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200/60 dark:border-neutral-800">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <img src="${app.icon}" alt="" class="w-8 h-8 rounded-xl flex-shrink-0">
+            <div class="truncate">
+              <div class="text-xs font-semibold text-neutral-800 dark:text-neutral-200 truncate">${app.name}</div>
+              <div class="text-[10px] text-neutral-400 truncate">${app.desc}</div>
+            </div>
+          </div>
+          <button onclick="restoreApp('${app.id}')" class="ml-2 flex-shrink-0 px-2.5 py-1 rounded-xl bg-white dark:bg-neutral-700 border border-neutral-200 dark:border-neutral-600 text-xs font-medium text-neutral-700 dark:text-neutral-200 hover:text-indigo-600 dark:hover:text-indigo-400 active:scale-95 transition-all">
+            恢复
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    let toastTimer;
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      const toastMsg = document.getElementById("toastMsg");
+      toastMsg.textContent = msg;
+      toast.classList.remove("opacity-0", "translate-y-2");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add("opacity-0", "translate-y-2");
+      }, 2200);
+    }
+
+    // 个人排序（过滤隐藏项 + ⭐️ 置顶优先 + 自由拖拽顺序）
+    function getSortedApps() {
+      let apps = INITIAL_APPS.filter(app => !(prefs.hidden || []).includes(app.id));
+
+      const orderMap = {};
+      (prefs.customOrder || []).forEach((id, index) => { orderMap[id] = index; });
+
+      return apps.map(app => ({
+        ...app,
+        isPinned: (prefs.pinned || []).includes(app.id)
+      })).sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        const orderA = orderMap[a.id] !== undefined ? orderMap[a.id] : 999;
+        const orderB = orderMap[b.id] !== undefined ? orderMap[b.id] : 999;
+        return orderA - orderB;
+      });
+    }
+
+    function renderApps() {
+      const allSorted = getSortedApps();
+      const filtered = allSorted.filter(app => {
+        return app.name.toLowerCase().includes(searchQuery) || app.desc.toLowerCase().includes(searchQuery);
+      });
+
+      const grid = document.getElementById("appsGrid");
+      const emptyState = document.getElementById("emptyState");
+
+      if (filtered.length === 0) {
+        grid.innerHTML = "";
+        emptyState.classList.remove("hidden");
+      } else {
+        emptyState.classList.add("hidden");
+        grid.innerHTML = filtered.map(app => `
+          <a 
+            href="${app.path}"
+            draggable="true"
+            data-id="${app.id}"
+            class="app-card group relative flex flex-col justify-between p-6 rounded-3xl bg-white dark:bg-neutral-900 border ${
+              app.isPinned ? 'border-amber-400 dark:border-amber-500/60 shadow-md' : 'border-neutral-200/80 dark:border-neutral-800 shadow-sm'
+            } hover:border-indigo-500/60 dark:hover:border-indigo-500/50 hover:shadow-xl transition-all duration-200 select-none cursor-pointer block no-underline"
+          >
+            <div>
+              <div class="flex items-start justify-between gap-3 mb-4">
+                <img src="${app.icon}" alt="${app.name}" class="w-14 h-14 rounded-2xl shadow-md group-hover:scale-105 transition-transform flex-shrink-0 pointer-events-none">
+                
+                <div class="flex items-center gap-1.5" onclick="event.preventDefault()">
+                  ${app.isPinned ? `
+                    <span class="text-[11px] px-2 py-0.5 rounded-lg bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700/60 font-semibold">
+                      已置顶
+                    </span>
+                  ` : ''}
+
+                  <!-- 隐藏应用按钮 -->
+                  <button 
+                    onclick="hideApp('${app.id}', event)" 
+                    class="p-1.5 rounded-xl text-neutral-300 dark:text-neutral-600 sm:opacity-0 sm:group-hover:opacity-100 hover:text-red-500 dark:hover:text-red-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-90 transition-all" 
+                    title="隐藏此应用 (可在底部随时恢复)"
+                  >
+                    <i data-lucide="eye-off" class="w-4 h-4"></i>
+                  </button>
+
+                  <!-- ⭐️ 星标置顶按钮 -->
+                  <button 
+                    onclick="togglePin('${app.id}', event)" 
+                    class="p-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-90 transition-all ${
+                      app.isPinned ? 'text-amber-500 fill-amber-500' : 'text-neutral-300 hover:text-amber-400'
+                    }" 
+                    title="${app.isPinned ? '取消置顶' : '置顶为常用'}"
+                  >
+                    <i data-lucide="star" class="w-4 h-4 ${app.isPinned ? 'fill-current' : ''}"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <h2 class="text-lg font-bold text-neutral-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors mb-2">
+                ${app.name}
+              </h2>
+              <p class="text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed line-clamp-2">
+                ${app.desc}
+              </p>
+            </div>
+
+            <div class="mt-6 pt-3 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between text-xs text-neutral-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+              <span class="font-medium">启动应用</span>
+              <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+            </div>
+          </a>
+        `).join("");
+
+        bindDragEvents();
+      }
+
+      // 更新在屏计数与隐藏管理入口
+      document.getElementById("appCount").textContent = `${allSorted.length}`;
+      const hiddenCount = (prefs.hidden || []).length;
+      const manageHiddenBtn = document.getElementById("manageHiddenBtn");
+      if (hiddenCount > 0) {
+        document.getElementById("hiddenCount").textContent = `${hiddenCount}`;
+        manageHiddenBtn.classList.remove("hidden");
+        manageHiddenBtn.classList.add("inline-flex");
+      } else {
+        manageHiddenBtn.classList.add("hidden");
+        manageHiddenBtn.classList.remove("inline-flex");
+      }
+
+      lucide.createIcons();
+    }
+
+    // 拖拽排序
+    let dragSrcElement = null;
+    let hasDragged = false;
+
+    function bindDragEvents() {
+      const cards = document.querySelectorAll('.app-card');
+      cards.forEach(card => {
+        card.addEventListener('dragstart', function(e) {
+          dragSrcElement = this;
+          hasDragged = true;
+          this.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', this.getAttribute('data-id'));
+        });
+
+        card.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          this.classList.add('drag-over');
+          return false;
+        });
+
+        card.addEventListener('dragleave', function() {
+          this.classList.remove('drag-over');
+        });
+
+        card.addEventListener('drop', function(e) {
+          e.stopPropagation();
+          e.preventDefault();
+          this.classList.remove('drag-over');
+          if (dragSrcElement !== this) {
+            const srcId = dragSrcElement.getAttribute('data-id');
+            const targetId = this.getAttribute('data-id');
+
+            let currentOrder = getSortedApps().map(a => a.id);
+            const fromIndex = currentOrder.indexOf(srcId);
+            const toIndex = currentOrder.indexOf(targetId);
+
+            if (fromIndex > -1 && toIndex > -1) {
+              currentOrder.splice(fromIndex, 1);
+              currentOrder.splice(toIndex, 0, srcId);
+              prefs.customOrder = currentOrder;
+              saveUserPreferences(prefs);
+              renderApps();
+            }
+          }
+          return false;
+        });
+
+        card.addEventListener('dragend', function() {
+          this.classList.remove('dragging');
+          cards.forEach(c => c.classList.remove('drag-over'));
+          setTimeout(() => { hasDragged = false; }, 50);
+        });
+
+        // 避免拖拽释放时误触发链接跳转
+        card.addEventListener('click', function(e) {
+          if (hasDragged) {
+            e.preventDefault();
+          }
+        });
+      });
+    }
+
+    const searchInput = document.getElementById("searchInput");
+    const searchKbd = document.getElementById("searchKbd");
+
+    // 智能识别平台更新快捷键徽标
+    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+    if (searchKbd) {
+      searchKbd.textContent = isMac ? "⌘K" : "/";
+    }
+
+    searchInput.addEventListener("input", (e) => {
+      searchQuery = e.target.value.trim().toLowerCase();
+      renderApps();
+    });
+
+    // 全局快捷键监听 (/ 键与 ⌘K / Ctrl+K)
+    window.addEventListener("keydown", (e) => {
+      // 打开搜索框：按下 / 键（且当前焦点不在任何输入元素上）
+      const isInputFocused = ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName);
+      if (e.key === '/' && !isInputFocused) {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+        return;
+      }
+
+      // 打开搜索框：按下 ⌘K 或 Ctrl+K
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+        return;
+      }
+
+      // ESC 键：退出聚焦、清空搜索、或关闭隐藏应用弹窗
+      if (e.key === 'Escape') {
+        const modal = document.getElementById("hiddenModal");
+        if (!modal.classList.contains("hidden")) {
+          closeHiddenModal();
+          return;
+        }
+        if (document.activeElement === searchInput) {
+          if (searchInput.value) {
+            searchInput.value = '';
+            searchQuery = '';
+            renderApps();
+          }
+          searchInput.blur();
+        }
+      }
+    });
+
+    document.getElementById("copyPromptBtn").addEventListener("click", () => {
+      const promptText = `请严格阅读并遵守根目录 AGENTS.md 的 Refactoring UI 与 Apple HIG 工业设计规范（双模响应、8pt间距、克制单色、同心圆角、零滚动条），帮我新建一个小工具：【在此输入工具名称与功能需求】。`;
+      navigator.clipboard.writeText(promptText).then(() => {
+        showToast("已复制指令！粘贴发给 AI 并填入工具需求即可。");
+      });
+    });
+
+    // 独立外观控制
+    const themeToggleBtn = document.getElementById("themeToggleBtn");
+    const themeMenu = document.getElementById("themeMenu");
+    const themeIcon = document.getElementById("themeIcon");
+    const THEME_KEY = "pwabox_hub_theme";
+
+    function setThemeMode(mode) {
+      localStorage.setItem(THEME_KEY, mode);
+      applyTheme();
+      themeMenu.classList.add("hidden");
+    }
+
+    function applyTheme() {
+      const mode = localStorage.getItem(THEME_KEY) || "system";
+      const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const isDark = mode === "dark" || (mode === "system" && systemDark);
+
+      document.documentElement.classList.toggle("dark", isDark);
+
+      if (mode === "system") {
+        themeToggleBtn.innerHTML = `<i data-lucide="monitor" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>`;
+        themeToggleBtn.title = `外观: 跟随系统 (${systemDark ? '当前深色' : '当前浅色'})`;
+      } else if (mode === "dark") {
+        themeToggleBtn.innerHTML = `<i data-lucide="moon" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>`;
+        themeToggleBtn.title = "外观: 手动深色";
+      } else {
+        themeToggleBtn.innerHTML = `<i data-lucide="sun" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>`;
+        themeToggleBtn.title = "外观: 手动浅色";
+      }
+
+      ['system', 'light', 'dark'].forEach(m => {
+        const btn = document.getElementById(`themeOpt${m.charAt(0).toUpperCase() + m.slice(1)}`);
+        const check = btn.querySelector('.check-icon');
+        if (m === mode) {
+          btn.classList.add('bg-indigo-50', 'dark:bg-indigo-950/60', 'font-semibold', 'text-indigo-600', 'dark:text-indigo-300');
+          check.classList.remove('hidden');
+        } else {
+          btn.classList.remove('bg-indigo-50', 'dark:bg-indigo-950/60', 'font-semibold', 'text-indigo-600', 'dark:text-indigo-300');
+          check.classList.add('hidden');
+        }
+      });
+
+      lucide.createIcons();
+    }
+
+    themeToggleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      themeMenu.classList.toggle("hidden");
+    });
+
+    document.addEventListener("click", () => {
+      themeMenu.classList.add("hidden");
+    });
+
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+      if ((localStorage.getItem(THEME_KEY) || "system") === "system") {
+        applyTheme();
+      }
+    });
+
+    // PWA Service Worker 注册（仅在 http/https 安全上下文中启用，本地 file:// 协议静默跳过无报错）
+    if ('serviceWorker' in navigator && (window.location.protocol === 'http:' || window.location.protocol === 'https:')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+
+    let deferredPrompt;
+    const installBtn = document.getElementById("installBtn");
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.classList.remove("hidden");
+      installBtn.classList.add("flex");
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') installBtn.classList.add("hidden");
+      deferredPrompt = null;
+    });
+
+    applyTheme();
+    renderApps();
+  </script>
+</body>
+</html>

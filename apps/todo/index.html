@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>轻记待办 - PWABox</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <meta name="theme-color" content="#0284c7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class'
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      overflow-x: hidden;
+      touch-action: manipulation;
+    }
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    /* 独立安装为桌面/手机 App 运行时，彻底隐藏返回大厅与安装按钮 */
+    @media (display-mode: standalone) {
+      .standalone-hidden {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-[100dvh] flex flex-col justify-between transition-colors duration-200">
+
+  <!-- 自适应顶层：与大厅保持 100% 容器宽度一致 (max-w-7xl 2xl:max-w-[1680px])，连续无缝无割裂 -->
+  <div class="max-w-7xl 2xl:max-w-[1680px] w-full mx-auto px-4 sm:px-6 lg:px-10 py-3 sm:py-6 md:py-8 flex-1 flex flex-col justify-between md:justify-start min-h-0">
+    
+    <!-- 顶部导航栏 -->
+    <header class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800 mb-6">
+      <div class="flex items-center gap-3">
+        <a href="../../index.html" class="standalone-hidden flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold active:scale-95 transition-all shadow-sm">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          <span>返回大厅</span>
+        </a>
+        <div class="standalone-hidden h-4 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block"></div>
+        <span class="text-sm font-bold text-slate-800 dark:text-slate-200">轻记待办</span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="installAppBtn" class="standalone-hidden hidden items-center gap-1.5 px-3 py-1.5 rounded-xl bg-sky-600 text-white text-xs font-semibold active:scale-95 transition-all shadow-sm">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          <span>独立安装</span>
+        </button>
+
+        <!-- ★ 独立深浅色控制浮窗（纯净图标） -->
+        <div class="relative">
+          <button id="themeToggleBtn" class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 transition-all shadow-sm" title="外观设置">
+            <i id="themeIcon" data-lucide="monitor" class="w-4 h-4 text-sky-600"></i>
+          </button>
+
+          <div id="themeMenu" class="hidden absolute right-0 mt-2 w-44 p-1.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl z-50 text-xs space-y-0.5">
+            <button onclick="setThemeMode('system')" id="themeOptSystem" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+              <span class="flex items-center gap-2">
+                <i data-lucide="monitor" class="w-4 h-4"></i> 跟随系统
+              </span>
+              <i data-lucide="check" class="w-3.5 h-3.5 check-icon text-sky-600 hidden"></i>
+            </button>
+            <button onclick="setThemeMode('light')" id="themeOptLight" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+              <span class="flex items-center gap-2">
+                <i data-lucide="sun" class="w-4 h-4"></i> 手动浅色
+              </span>
+              <i data-lucide="check" class="w-3.5 h-3.5 check-icon text-sky-600 hidden"></i>
+            </button>
+            <button onclick="setThemeMode('dark')" id="themeOptDark" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+              <span class="flex items-center gap-2">
+                <i data-lucide="moon" class="w-4 h-4"></i> 手动深色
+              </span>
+              <i data-lucide="check" class="w-3.5 h-3.5 check-icon text-sky-600 hidden"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 主体区域：PC (md) 双栏工作台，居于偏上黄金视觉区 -->
+    <main class="grid grid-cols-1 md:grid-cols-12 gap-6 2xl:gap-8 my-auto md:my-0 md:mt-2 2xl:mt-4 items-start flex-1 min-h-0">
+      
+      <!-- 左侧侧边栏 (PC 占 4 列，手机在上方折叠显示) -->
+      <aside class="md:col-span-4 space-y-4">
+        
+        <!-- 任务分类看板 (同心圆角：外层 rounded-2xl，内层 rounded-xl) -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-1">
+          <div class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider px-2 py-1 mb-1">视图过滤</div>
+          <button onclick="setFilter('all')" id="tabAll" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-sky-600 text-white transition-all duration-150 active:scale-[0.97] shadow-sm">
+            <span class="flex items-center gap-2"><i data-lucide="inbox" class="w-4 h-4"></i> 全部任务</span>
+            <span id="badgeTotal" class="px-2 py-0.5 rounded-full bg-white/20 text-[11px]">0</span>
+          </button>
+          <button onclick="setFilter('active')" id="tabActive" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-150 active:scale-[0.97]">
+            <span class="flex items-center gap-2"><i data-lucide="circle" class="w-4 h-4 text-amber-500"></i> 进行中</span>
+            <span id="badgeActive" class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] text-slate-600 dark:text-slate-400">0</span>
+          </button>
+          <button onclick="setFilter('completed')" id="tabCompleted" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-150 active:scale-[0.97]">
+            <span class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i> 已完成</span>
+            <span id="badgeDone" class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] text-slate-600 dark:text-slate-400">0</span>
+          </button>
+        </div>
+
+        <!-- 进度条与数据备份卡片 -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 shadow-sm space-y-3">
+          <div>
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1.5">
+              <span>完成率进度</span>
+              <span id="progressPercent" class="text-sky-600 dark:text-sky-400">0%</span>
+            </div>
+            <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+              <div id="progressBar" class="h-full bg-sky-500 transition-all duration-300 rounded-full" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex gap-2">
+            <button id="openBackupBtn" class="flex-1 py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 border border-slate-200/70 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium flex items-center justify-center gap-1.5 active:scale-[0.97] transition-all duration-150">
+              <i data-lucide="database" class="w-3.5 h-3.5"></i> 数据备份恢复
+            </button>
+            <button id="clearDoneBtn" class="py-2 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-400 border border-slate-200/70 dark:border-slate-700 text-slate-500 text-xs font-medium active:scale-[0.97] transition-all duration-150" title="清除已完成">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+      </aside>
+
+      <!-- 右侧主任务列表区 (PC 占 8 列) -->
+      <section class="md:col-span-8 space-y-4">
+        
+        <!-- 新增输入栏 (同心圆角 rounded-xl) -->
+        <form id="addTodoForm" class="flex gap-2">
+          <input 
+            type="text" 
+            id="todoInput" 
+            placeholder="添加新待办（按 Enter 快速保存）..." 
+            class="flex-1 px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500/30 text-sm shadow-xs transition-all duration-150 text-slate-800 dark:text-slate-100"
+            autocomplete="off"
+          >
+          <button type="submit" class="px-5 py-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm flex items-center justify-center gap-1.5 active:scale-[0.97] transition-all duration-150 shadow-sm">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">添加</span>
+          </button>
+        </form>
+
+        <!-- 任务列表容器 (外层 rounded-2xl) -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 shadow-sm min-h-[360px] flex flex-col justify-between">
+          <ul id="todoList" class="space-y-2 flex-1">
+            <!-- 动态渲染 -->
+          </ul>
+
+          <!-- 空白占位 -->
+          <div id="emptyList" class="hidden py-16 text-center my-auto">
+            <div class="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800 mx-auto flex items-center justify-center text-slate-300 dark:text-slate-600 mb-2">
+              <i data-lucide="check-check" class="w-6 h-6"></i>
+            </div>
+            <p class="text-xs text-slate-400">当前分类暂无待办任务</p>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 dark:border-slate-800 mt-4 text-[11px] text-slate-400 flex items-center justify-between">
+            <span>点击圆圈勾选完成 · 支持单任务删除</span>
+            <span id="footerStatus">准备就绪</span>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <footer class="pt-6 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-400">
+      轻记待办 · PWABox 独立运行与外观自主控制
+    </footer>
+
+  </div>
+
+  <!-- 备份模态弹窗 -->
+  <div id="backupModal" class="hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-sm w-full p-5 shadow-2xl space-y-4 border border-slate-200 dark:border-slate-800">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+          <i data-lucide="database" class="w-4 h-4 text-sky-600"></i>
+          本地数据备份与恢复
+        </h3>
+        <button id="closeBackupBtn" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+        数据存储在当前浏览器的本地缓存中。换设备或备份时，可复制以下代码保存，或将之前的代码粘贴在下方点恢复。
+      </p>
+      <textarea id="backupText" rows="5" class="w-full p-2.5 text-xs font-mono bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none text-slate-800 dark:text-slate-200"></textarea>
+      <div class="flex gap-2">
+        <button id="copyBackupBtn" class="flex-1 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium active:scale-95 transition-all">
+          复制备份
+        </button>
+        <button id="restoreBackupBtn" class="flex-1 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-medium active:scale-95 transition-all">
+          从文本恢复
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

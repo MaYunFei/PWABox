@@ -1,0 +1,19 @@
+{
+  "name": "PWABox - 微应用百宝箱",
+  "short_name": "PWABox",
+  "description": "轻量免编译、开箱即用的渐进式微应用集合大厅",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

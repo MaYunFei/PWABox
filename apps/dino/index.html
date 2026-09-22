@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>断网小恐龙 - 经典离线跑酷</title>
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#18181b">
+
+  <!-- 国内高速 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Courier New', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    * { -webkit-tap-highlight-color: transparent; }
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    canvas {
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -webkit-crisp-edges;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+  </style>
+</head>
+<body class="bg-white sm:bg-neutral-100 dark:bg-neutral-950 sm:dark:bg-neutral-950 text-neutral-800 dark:text-neutral-100 h-[100dvh] flex flex-col justify-between select-none transition-colors duration-200">
+
+  <!-- 顶层外壳：与大厅保持 100% 容器宽度与内边距一致 (max-w-7xl 2xl:max-w-[1680px])，连续无缝 -->
+  <div class="w-full max-w-7xl 2xl:max-w-[1680px] mx-auto h-[100dvh] flex flex-col justify-between md:justify-start px-4 sm:px-6 lg:px-10 py-3 sm:py-6 md:py-8 pt-[env(safe-area-inset-top,12px)] pb-[env(safe-area-inset-bottom,12px)]">
+    
+    <!-- 顶部导航栏（手机贴顶，PC 间距适中） -->
+    <header class="flex items-center justify-between pb-3 border-b border-neutral-200/80 dark:border-neutral-800/80 mb-2 sm:mb-4 flex-shrink-0">
+      <div class="flex items-center gap-2.5">
+        <a href="../../index.html" class="standalone-hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-100 sm:bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-xs font-semibold active:scale-95 transition-all shadow-xs">
+          <i data-lucide="arrow-left" class="w-4 h-4"></i>
+          <span>返回大厅</span>
+        </a>
+        <div class="standalone-hidden h-4 w-px bg-neutral-200 dark:bg-neutral-800 hidden sm:block"></div>
+        <span class="text-sm font-bold tracking-tight text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5">
+          <span>断网小恐龙</span>
+          <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 font-bold">T-Rex Arcade</span>
+        </span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <!-- 音效开关 -->
+        <button id="soundToggleBtn" class="p-2 rounded-xl bg-neutral-100 sm:bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 text-neutral-600 dark:text-neutral-300 active:scale-95 transition-all shadow-xs" title="音效开关">
+          <i id="soundIcon" data-lucide="volume-2" class="w-4 h-4"></i>
+        </button>
+
+        <!-- 独立安装按钮 -->
+        <button id="installAppBtn" class="standalone-hidden hidden items-center gap-1.5 px-3 py-1.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 text-xs font-semibold active:scale-95 transition-all shadow-xs">
+          <i data-lucide="download" class="w-3.5 h-3.5"></i>
+          <span>安装</span>
+        </button>
+
+        <!-- 外观微浮层 -->
+        <div class="relative">
+          <button id="themeToggleBtn" class="p-2 rounded-xl bg-neutral-100 sm:bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 active:scale-95 transition-all shadow-xs" title="外观设置">
+            <i id="themeIcon" data-lucide="monitor" class="w-4 h-4"></i>
+          </button>
+
+          <div id="themeMenu" class="hidden absolute right-0 mt-2 w-44 p-1.5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-xl z-50 text-xs space-y-0.5">
+            <button onclick="setThemeMode('system')" id="themeOptSystem" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+              <span class="flex items-center gap-2">
+                <i data-lucide="monitor" class="w-4 h-4"></i> 跟随系统
+              </span>
+              <i data-lucide="check" class="w-3.5 h-3.5 check-icon text-indigo-600 dark:text-indigo-400 hidden"></i>
+            </button>
+            <button onclick="setThemeMode('light')" id="themeOptLight" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+              <span class="flex items-center gap-2">
+                <i data-lucide="sun" class="w-4 h-4"></i> 手动浅色
+              </span>
+              <i data-lucide="check" class="w-3.5 h-3.5 check-icon text-indigo-600 dark:text-indigo-400 hidden"></i>
+            </button>
+            <button onclick="setThemeMode('dark')" id="themeOptDark" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors">
+              <span class="flex items-center gap-2">
+                <i data-lucide="moon" class="w-4 h-4"></i> 手动深色
+              </span>
+              <i data-lucide="check" class="w-3.5 h-3.5 check-icon text-indigo-600 dark:text-indigo-400 hidden"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- 游戏舞台与桌面双栏（手机单栏铺满，PC/4K 居于黄金偏上视角） -->
+    <main class="grid grid-cols-1 md:grid-cols-12 gap-5 2xl:gap-8 flex-1 min-h-0 items-stretch my-auto md:my-0 md:mt-3 2xl:mt-6">
+      
+      <!-- 左栏 (8列)：游戏主屏幕舞台 -->
+      <div class="md:col-span-8 flex flex-col justify-between h-full min-h-0">
+        
+        <!-- 分数看板 -->
+        <div class="flex items-center justify-between font-mono text-xs sm:text-sm font-bold text-neutral-500 dark:text-neutral-400 py-1 px-1 flex-shrink-0">
+          <span id="speedBadge" class="text-[11px] px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800/80 font-mono text-neutral-600 dark:text-neutral-300">
+            1.0x 速度
+          </span>
+          <div class="flex items-center gap-3">
+            <span id="hiScoreText" class="text-neutral-400 dark:text-neutral-600">HI 00000</span>
+            <span id="scoreText" class="text-neutral-900 dark:text-white font-extrabold text-base">00000</span>
+          </div>
+        </div>
+
+        <!-- 画布视口区域（高度智能铺满，同心圆角 rounded-2xl） -->
+        <div class="relative flex-1 w-full bg-neutral-50 dark:bg-neutral-950 sm:rounded-2xl overflow-hidden border border-neutral-200/60 dark:border-neutral-800/80 shadow-xs flex items-center justify-center my-2 min-h-[200px]">
+          <canvas id="gameCanvas" width="800" height="320" class="w-full h-full object-contain block cursor-pointer"></canvas>
+
+          <!-- 游戏初始与结束覆盖层 -->
+          <div id="overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-black/10 dark:bg-black/40 backdrop-blur-[2px] transition-opacity">
+            <div class="text-center px-4">
+              <div id="overlayTitle" class="text-base sm:text-lg font-black tracking-widest text-neutral-800 dark:text-neutral-100 font-mono mb-3">
+                按空格 / 点击起跳
+              </div>
+              <button id="startBtn" class="px-6 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 dark:bg-white dark:hover:bg-neutral-100 text-white dark:text-neutral-900 text-sm font-bold shadow-md active:scale-[0.97] transition-all duration-150">
+                立即开始
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🎮 移动端专有：大拇指触控双按键面板（8pt 空间 + rounded-xl + active:scale-[0.97]） -->
+        <div class="grid grid-cols-2 gap-3 pt-2 pb-1 sm:hidden flex-shrink-0">
+          <button 
+            id="mobileDuckBtn"
+            class="h-14 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-200 font-bold text-sm flex items-center justify-center gap-2 active:bg-neutral-200 dark:active:bg-neutral-800 active:scale-[0.97] transition-all duration-150 shadow-xs"
+          >
+            <i data-lucide="arrow-down" class="w-5 h-5"></i>
+            <span>俯身滑铲 (按住)</span>
+          </button>
+
+          <button 
+            id="mobileJumpBtn"
+            class="h-14 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm flex items-center justify-center gap-2 active:bg-amber-600 active:scale-[0.97] transition-all duration-150 shadow-md shadow-amber-500/20"
+          >
+            <i data-lucide="arrow-up" class="w-5 h-5"></i>
+            <span>跳跃 JUMP</span>
+          </button>
+        </div>
+
+        <!-- 💻 桌面端快捷提示条 -->
+        <div class="hidden sm:flex items-center justify-between text-xs text-neutral-400 pt-2 border-t border-neutral-200/60 dark:border-neutral-800 flex-shrink-0">
+          <div class="flex items-center gap-2 font-mono">
+            <kbd class="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">空格 / ↑</kbd> 起跳
+            <span class="opacity-30">·</span>
+            <kbd class="px-1.5 py-0.5 rounded bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">↓ 键</kbd> 滑铲钻翼龙
+          </div>
+          <div class="text-[11px] font-mono">100% 离线运行 · 纯原生 Canvas</div>
+        </div>
+
+      </div>
+
+      <!-- 右栏 (4列)：PC/4K 专属电竞街机数据仪表盘 (同心圆角 rounded-2xl + 单重音色规范) -->
+      <aside class="hidden md:flex md:col-span-4 flex-col justify-between gap-4 h-full">
+        
+        <!-- 生涯战绩面板 -->
+        <div class="p-5 rounded-2xl bg-white dark:bg-neutral-900/80 border border-neutral-200/80 dark:border-neutral-800/80 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800/80 pb-3">
+            <h3 class="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
+              <i data-lucide="trophy" class="w-4 h-4 text-amber-500"></i>
+              街机战绩生涯
+            </h3>
+            <button id="resetStatsBtn" class="text-[11px] text-neutral-400 hover:text-red-500 transition-colors">
+              清空数据
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2.5">
+            <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-950/60 border border-neutral-200/60 dark:border-neutral-800">
+              <div class="text-[11px] text-neutral-400">历史最高分</div>
+              <div class="text-xl font-black text-amber-500 mt-1 font-mono" id="statHiScore">0</div>
+            </div>
+            <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-950/60 border border-neutral-200/60 dark:border-neutral-800">
+              <div class="text-[11px] text-neutral-400">总游玩局数</div>
+              <div class="text-xl font-black text-neutral-800 dark:text-white mt-1 font-mono" id="statGames">0</div>
+            </div>
+            <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-950/60 border border-neutral-200/60 dark:border-neutral-800">
+              <div class="text-[11px] text-neutral-400">累计起跳</div>
+              <div class="text-xl font-black text-neutral-800 dark:text-white mt-1 font-mono" id="statJumps">0</div>
+            </div>
+            <div class="p-3 rounded-xl bg-neutral-50 dark:bg-neutral-950/60 border border-neutral-200/60 dark:border-neutral-800">
+              <div class="text-[11px] text-neutral-400">滑铲闪避</div>
+              <div class="text-xl font-black text-neutral-800 dark:text-white mt-1 font-mono" id="statDucks">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 障碍物图鉴与应对指南 -->
+        <div class="p-5 rounded-2xl bg-white dark:bg-neutral-900/80 border border-neutral-200/80 dark:border-neutral-800/80 shadow-sm space-y-3">
+          <h3 class="text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider flex items-center gap-1.5">
+            <i data-lucide="book-open" class="w-4 h-4 text-amber-500"></i>
+            障碍图鉴与避障技巧
+          </h3>
+
+          <div class="space-y-2 text-xs">
+            <div class="p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950/60 border border-neutral-200/60 dark:border-neutral-800 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-base">🌵</span>
+                <span class="font-semibold text-neutral-800 dark:text-neutral-200">沙漠仙人掌群</span>
+              </div>
+              <span class="text-[11px] px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-400 font-medium font-mono">起跳越过</span>
+            </div>
+
+            <div class="p-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-950/60 border border-neutral-200/60 dark:border-neutral-800 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="text-base">🦅</span>
+                <span class="font-semibold text-neutral-800 dark:text-neutral-200">低空飞行翼龙</span>
+              </div>
+              <span class="text-[11px] px-2 py-0.5 rounded-md bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium font-mono">按住↓滑铲</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 底部标语 -->
+        <div class="p-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-900/40 border border-neutral-200/60 dark:border-neutral-800 text-xs text-neutral-400 flex items-center justify-between">
+          <span>经典复刻 · 零外部资源</span>
+          <span class="font-mono text-neutral-500 dark:text-neutral-400">60 FPS 顺畅运行</span>
+        </div>
+
+      </aside>
+
+    </main>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

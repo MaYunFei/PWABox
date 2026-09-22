@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+    <linearGradient id="cube-top" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#A78BFA" />
+      <stop offset="100%" stop-color="#C4B5FD" />
+    </linearGradient>
+    <linearGradient id="cube-left" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B5CF6" />
+      <stop offset="100%" stop-color="#6D28D9" />
+    </linearGradient>
+    <linearGradient id="cube-right" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7C3AED" />
+      <stop offset="100%" stop-color="#4C1D95" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#312E81" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- Background rounded squircle -->
+  <rect width="512" height="512" rx="128" fill="url(#bg)" />
+
+  <!-- Isometric Box/Cube Icon -->
+  <g filter="url(#shadow)" transform="translate(256, 260)">
+    <!-- Top Face -->
+    <polygon points="0,-120 104,-60 0,0 -104,-60" fill="url(#cube-top)" />
+    <!-- Left Face -->
+    <polygon points="-104,-60 0,0 0,120 -104,60" fill="url(#cube-left)" />
+    <!-- Right Face -->
+    <polygon points="0,0 104,-60 104,60 0,120" fill="url(#cube-right)" />
+    <!-- Floating Sparkles / Apps Elements -->
+    <circle cx="-130" cy="-90" r="14" fill="#FBBF24" opacity="0.9" />
+    <circle cx="120" cy="-100" r="18" fill="#38BDF8" opacity="0.9" />
+    <circle cx="140" cy="50" r="10" fill="#34D399" opacity="0.8" />
+  </g>
+</svg>

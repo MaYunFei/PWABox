@@ -1,0 +1,19 @@
+{
+  "name": "极简番茄钟 - PWABox",
+  "short_name": "番茄钟",
+  "description": "25分钟专注与5分钟休息的高效时间管理工具",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#ef4444",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
