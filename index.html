@@ -514,20 +514,26 @@
       });
     });
 
-    // 独立外观控制
+    // 全局外观控制与微应用联动
     const themeToggleBtn = document.getElementById("themeToggleBtn");
     const themeMenu = document.getElementById("themeMenu");
     const themeIcon = document.getElementById("themeIcon");
-    const THEME_KEY = "pwabox_hub_theme";
+    const GLOBAL_THEME_KEY = "pwabox_theme_global";
+    const HUB_THEME_KEY = "pwabox_hub_theme";
 
     function setThemeMode(mode) {
-      localStorage.setItem(THEME_KEY, mode);
+      localStorage.setItem(GLOBAL_THEME_KEY, mode);
+      localStorage.setItem(HUB_THEME_KEY, mode);
+      // 联动同步所有已注册微应用，确保进入应用后深浅色完全一致
+      INITIAL_APPS.forEach(app => {
+        localStorage.setItem(`pwabox_${app.id}_theme`, mode);
+      });
       applyTheme();
       themeMenu.classList.add("hidden");
     }
 
     function applyTheme() {
-      const mode = localStorage.getItem(THEME_KEY) || "system";
+      const mode = localStorage.getItem(GLOBAL_THEME_KEY) || localStorage.getItem(HUB_THEME_KEY) || "system";
       const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       const isDark = mode === "dark" || (mode === "system" && systemDark);
 
@@ -568,8 +574,17 @@
       themeMenu.classList.add("hidden");
     });
 
+    // 监听系统深浅色切换
     window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
-      if ((localStorage.getItem(THEME_KEY) || "system") === "system") {
+      const mode = localStorage.getItem(GLOBAL_THEME_KEY) || localStorage.getItem(HUB_THEME_KEY) || "system";
+      if (mode === "system") {
+        applyTheme();
+      }
+    });
+
+    // 跨标签页即时同步
+    window.addEventListener("storage", (e) => {
+      if (e.key === GLOBAL_THEME_KEY || e.key === HUB_THEME_KEY) {
         applyTheme();
       }
     });

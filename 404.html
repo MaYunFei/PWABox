@@ -82,9 +82,9 @@
   </style>
 
   <script>
-    // 同步深浅色外观
+    // 同步深浅色外观（继承全局主题）
     function syncTheme() {
-      const saved = localStorage.getItem('pwabox_theme_mode') || 'system';
+      const saved = localStorage.getItem('pwabox_theme_global') || localStorage.getItem('pwabox_hub_theme') || 'system';
       const isDark = saved === 'dark' || (saved === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
       if (isDark) {
         document.documentElement.classList.add('dark');

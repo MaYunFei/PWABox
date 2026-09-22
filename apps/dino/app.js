@@ -649,21 +649,25 @@ startBtn.addEventListener('click', (e) => {
 hiScoreText.textContent = `HI ${String(hiScore).padStart(5, '0')}`;
 
 // ==========================================
-// 独立深浅色外观控制（系统联动 + 手动覆盖）
+// 独立深浅色外观控制（全局联动 + 独立覆盖）
 // ==========================================
-const THEME_KEY = 'pwabox_dino_theme';
+const LOCAL_THEME_KEY = 'pwabox_dino_theme';
+const GLOBAL_THEME_KEY = 'pwabox_theme_global';
 const themeToggleBtn = document.getElementById('themeToggleBtn');
 const themeMenu = document.getElementById('themeMenu');
-const themeIcon = document.getElementById('themeIcon');
+
+function getActiveThemeMode() {
+  return localStorage.getItem(LOCAL_THEME_KEY) || localStorage.getItem(GLOBAL_THEME_KEY) || 'system';
+}
 
 function setThemeMode(mode) {
-  localStorage.setItem(THEME_KEY, mode);
+  localStorage.setItem(LOCAL_THEME_KEY, mode);
   applyTheme();
   themeMenu.classList.add('hidden');
 }
 
 function applyTheme() {
-  const mode = localStorage.getItem(THEME_KEY) || 'system';
+  const mode = getActiveThemeMode();
   const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const isDark = mode === 'dark' || (mode === 'system' && systemDark);
 
@@ -682,13 +686,15 @@ function applyTheme() {
 
   ['system', 'light', 'dark'].forEach(m => {
     const btn = document.getElementById(`themeOpt${m.charAt(0).toUpperCase() + m.slice(1)}`);
-    const check = btn.querySelector('.check-icon');
-    if (m === mode) {
-      btn.classList.add('bg-neutral-100', 'dark:bg-neutral-800', 'font-semibold', 'text-amber-600', 'dark:text-amber-400');
-      check.classList.remove('hidden');
-    } else {
-      btn.classList.remove('bg-neutral-100', 'dark:bg-neutral-800', 'font-semibold', 'text-amber-600', 'dark:text-amber-400');
-      check.classList.add('hidden');
+    if (btn) {
+      const check = btn.querySelector('.check-icon');
+      if (m === mode) {
+        btn.classList.add('bg-neutral-100', 'dark:bg-neutral-800', 'font-semibold', 'text-amber-600', 'dark:text-amber-400');
+        if (check) check.classList.remove('hidden');
+      } else {
+        btn.classList.remove('bg-neutral-100', 'dark:bg-neutral-800', 'font-semibold', 'text-amber-600', 'dark:text-amber-400');
+        if (check) check.classList.add('hidden');
+      }
     }
   });
 
@@ -713,7 +719,14 @@ document.addEventListener('click', () => {
 });
 
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-  if ((localStorage.getItem(THEME_KEY) || 'system') === 'system') {
+  if (getActiveThemeMode() === 'system') {
+    applyTheme();
+  }
+});
+
+// 跨标签页 / 大厅主题修改即时联动
+window.addEventListener('storage', (e) => {
+  if (e.key === GLOBAL_THEME_KEY || e.key === LOCAL_THEME_KEY) {
     applyTheme();
   }
 });
