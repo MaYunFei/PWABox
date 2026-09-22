@@ -131,7 +131,22 @@
       </div>
     </header>
 
-    <!-- 核心微应用卡片展示区：普通屏 2-3 列，2K/4K 宽屏自适应 4-5 列，气势磅礴 -->
+    <!-- 顶部状态栏与管家式提示 -->
+    <div class="mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs text-neutral-400 dark:text-neutral-500">
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 font-mono text-[11px]">
+          <span id="appCount">3</span> 个微应用可用
+        </span>
+        <span class="hidden md:inline text-neutral-300 dark:text-neutral-700">·</span>
+        <span class="hidden md:inline">由 AI 智能编排默认顺序</span>
+      </div>
+      <div class="text-[11px] text-neutral-400 flex items-center gap-1.5">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
+        <span>自带示例供体验参考，拥有自己的工具后可随时让 AI 彻底删除</span>
+      </div>
+    </div>
+
+    <!-- 核心微应用卡片展示区：普通屏 2-3 列，2K/4K 宽屏自适应 4 列，气势磅礴 -->
     <main class="flex-1">
       <div id="appsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-5 sm:gap-6"></div>
 
@@ -148,8 +163,8 @@
     <footer class="mt-12 pt-6 border-t border-neutral-200/80 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-neutral-400 dark:text-neutral-500">
       <div class="flex items-center gap-3 flex-wrap justify-center sm:justify-start">
         <span class="flex items-center gap-1.5">
-          <i data-lucide="grip-vertical" class="w-3.5 h-3.5"></i>
-          按住卡片自由拖拽 · ⭐️ 置顶
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
+          AI 默认排序 · ⭐️ 置顶常用
         </span>
         <span class="hidden sm:inline opacity-30">|</span>
         <button id="manageHiddenBtn" onclick="openHiddenModal()" class="hidden items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
@@ -236,9 +251,9 @@
     function getUserPreferences() {
       try {
         const data = localStorage.getItem(USER_STATE_KEY);
-        return data ? JSON.parse(data) : { pinned: [], customOrder: [], hidden: [] };
+        return data ? JSON.parse(data) : { pinned: [], hidden: [] };
       } catch (e) {
-        return { pinned: [], customOrder: [], hidden: [] };
+        return { pinned: [], hidden: [] };
       }
     }
 
@@ -248,6 +263,7 @@
 
     let prefs = getUserPreferences();
     if (!prefs.hidden) prefs.hidden = [];
+    if (!prefs.pinned) prefs.pinned = [];
     let searchQuery = "";
 
     function togglePin(appId, event) {
@@ -340,22 +356,16 @@
       }, 2200);
     }
 
-    // 个人排序（过滤隐藏项 + ⭐️ 置顶优先 + 自由拖拽顺序）
+    // 纯粹的自然展示顺序：以代码 INITIAL_APPS 为准由 AI 编排，仅保留 ⭐️ 置顶前置
     function getSortedApps() {
-      let apps = INITIAL_APPS.filter(app => !(prefs.hidden || []).includes(app.id));
-
-      const orderMap = {};
-      (prefs.customOrder || []).forEach((id, index) => { orderMap[id] = index; });
-
-      return apps.map(app => ({
+      const visible = INITIAL_APPS.filter(app => !(prefs.hidden || []).includes(app.id));
+      return visible.map(app => ({
         ...app,
         isPinned: (prefs.pinned || []).includes(app.id)
       })).sort((a, b) => {
         if (a.isPinned && !b.isPinned) return -1;
         if (!a.isPinned && b.isPinned) return 1;
-        const orderA = orderMap[a.id] !== undefined ? orderMap[a.id] : 999;
-        const orderB = orderMap[b.id] !== undefined ? orderMap[b.id] : 999;
-        return orderA - orderB;
+        return 0;
       });
     }
 
@@ -376,15 +386,14 @@
         grid.innerHTML = filtered.map(app => `
           <a 
             href="${app.path}"
-            draggable="true"
             data-id="${app.id}"
-            class="app-card group relative flex flex-col justify-between p-6 rounded-3xl bg-white dark:bg-neutral-900 border ${
-              app.isPinned ? 'border-amber-400 dark:border-amber-500/60 shadow-md' : 'border-neutral-200/80 dark:border-neutral-800 shadow-sm'
-            } hover:border-indigo-500/60 dark:hover:border-indigo-500/50 hover:shadow-xl transition-all duration-200 select-none cursor-pointer block no-underline"
+            class="app-card group relative flex flex-col justify-between p-6 rounded-2xl bg-white dark:bg-neutral-900/80 border ${
+              app.isPinned ? 'border-amber-400 dark:border-amber-500/60 shadow-md' : 'border-neutral-200/80 dark:border-neutral-800/80 shadow-xs'
+            } hover:border-indigo-500/60 dark:hover:border-indigo-500/50 hover:shadow-xl transition-all duration-150 cursor-pointer block no-underline"
           >
             <div>
               <div class="flex items-start justify-between gap-3 mb-4">
-                <img src="${app.icon}" alt="${app.name}" class="w-14 h-14 rounded-2xl shadow-md group-hover:scale-105 transition-transform flex-shrink-0 pointer-events-none">
+                <img src="${app.icon}" alt="${app.name}" class="w-14 h-14 rounded-2xl shadow-xs group-hover:scale-105 transition-transform flex-shrink-0 pointer-events-none">
                 
                 <div class="flex items-center gap-1.5" onclick="event.preventDefault()">
                   ${app.isPinned ? `
@@ -396,7 +405,7 @@
                   <!-- 隐藏应用按钮 -->
                   <button 
                     onclick="hideApp('${app.id}', event)" 
-                    class="p-1.5 rounded-xl text-neutral-300 dark:text-neutral-600 sm:opacity-0 sm:group-hover:opacity-100 hover:text-red-500 dark:hover:text-red-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-90 transition-all" 
+                    class="p-1.5 rounded-lg text-neutral-300 dark:text-neutral-600 sm:opacity-0 sm:group-hover:opacity-100 hover:text-red-500 dark:hover:text-red-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-[0.9] transition-all" 
                     title="隐藏此应用 (可在底部随时恢复)"
                   >
                     <i data-lucide="eye-off" class="w-4 h-4"></i>
@@ -405,7 +414,7 @@
                   <!-- ⭐️ 星标置顶按钮 -->
                   <button 
                     onclick="togglePin('${app.id}', event)" 
-                    class="p-1.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-90 transition-all ${
+                    class="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 active:scale-[0.9] transition-all ${
                       app.isPinned ? 'text-amber-500 fill-amber-500' : 'text-neutral-300 hover:text-amber-400'
                     }" 
                     title="${app.isPinned ? '取消置顶' : '置顶为常用'}"
@@ -429,8 +438,6 @@
             </div>
           </a>
         `).join("");
-
-        bindDragEvents();
       }
 
       // 更新在屏计数与隐藏管理入口
@@ -447,69 +454,6 @@
       }
 
       lucide.createIcons();
-    }
-
-    // 拖拽排序
-    let dragSrcElement = null;
-    let hasDragged = false;
-
-    function bindDragEvents() {
-      const cards = document.querySelectorAll('.app-card');
-      cards.forEach(card => {
-        card.addEventListener('dragstart', function(e) {
-          dragSrcElement = this;
-          hasDragged = true;
-          this.classList.add('dragging');
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', this.getAttribute('data-id'));
-        });
-
-        card.addEventListener('dragover', function(e) {
-          e.preventDefault();
-          this.classList.add('drag-over');
-          return false;
-        });
-
-        card.addEventListener('dragleave', function() {
-          this.classList.remove('drag-over');
-        });
-
-        card.addEventListener('drop', function(e) {
-          e.stopPropagation();
-          e.preventDefault();
-          this.classList.remove('drag-over');
-          if (dragSrcElement !== this) {
-            const srcId = dragSrcElement.getAttribute('data-id');
-            const targetId = this.getAttribute('data-id');
-
-            let currentOrder = getSortedApps().map(a => a.id);
-            const fromIndex = currentOrder.indexOf(srcId);
-            const toIndex = currentOrder.indexOf(targetId);
-
-            if (fromIndex > -1 && toIndex > -1) {
-              currentOrder.splice(fromIndex, 1);
-              currentOrder.splice(toIndex, 0, srcId);
-              prefs.customOrder = currentOrder;
-              saveUserPreferences(prefs);
-              renderApps();
-            }
-          }
-          return false;
-        });
-
-        card.addEventListener('dragend', function() {
-          this.classList.remove('dragging');
-          cards.forEach(c => c.classList.remove('drag-over'));
-          setTimeout(() => { hasDragged = false; }, 50);
-        });
-
-        // 避免拖拽释放时误触发链接跳转
-        card.addEventListener('click', function(e) {
-          if (hasDragged) {
-            e.preventDefault();
-          }
-        });
-      });
     }
 
     const searchInput = document.getElementById("searchInput");
