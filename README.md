@@ -19,7 +19,7 @@
   - 进入任何一个小工具，**都能单独“添加到主屏幕”**，成为手机/电脑上独立的全屏 App，互不干扰！
 - 💻 **双模自适应与 4K 超宽大屏**：遵循《Refactoring UI》与 Apple HIG 规范，手机端全屏沉浸零滚动条，桌面端强制双栏/仪表盘并消除视觉下坠。
 - 🎨 **工业级设计审美**：基于 Google Labs《DESIGN.md》标准与 Refactoring UI，8pt 间距网格、同心圆角嵌套、单重音配色，拒绝土味界面。
-- ☁️ **Cloudflare 极速托管**：Git 仓库绑定 Cloudflare Pages，0 配置全球秒级分发。
+- ☁️ **Cloudflare & GitHub Pages 双平台即时托管**：0 配置全球秒级分发，纯静态免编译，推送代码即可自动更新。
 - 🤖 **AI 行为宪法 (`AGENTS.md`)**：没有隐藏的点文件，AI 打开项目即可严格遵守设计与架构规范。
 
 ---
@@ -76,8 +76,17 @@ PWABox/
 1. 电脑浏览器会自动弹出打开：`http://localhost:8000`
 2. 终端会清晰打印出你的**手机局域网 IP**（如 `http://192.168.1.5:8000`），拿起连着同一 Wi-Fi 的手机直接访问，即可测试添加到手机桌面！
 
-### 第 1 步：获取项目
-在 GitHub 上点击绿色的 **「Use this template」**（使用此模板）新建你自己的仓库，或直接下载 ZIP 解压。
+### 第 1 步：获取项目（Template 与 Fork 怎么选？）
+
+在 GitHub 仓库主页顶部，你可以根据自己的习惯自由选择：
+
+- **🟢 方式 A：点击「Use this template」（推荐，最纯净自由）**
+  - **特点**：创建一个 **100% 属于你的独立全新仓库**，提交历史从零开始，没有上游代码的 PR 提示干扰，适合放开手脚大刀阔斧打造私有工具箱。
+  - **💡 模板用户如何同步官方新功能？**
+    如果未来原作者仓库更新了大厅新特性或优化了底座，你**完全不需要懂复杂的 Git 命令**，只需在 AI 编辑器中对 AI 说一句话即可智能无痛同步：
+    > 💬 *“请对比原作者仓库 `https://github.com/MaYunFei/PWABox` 最新的 `index.html`（或 `sw.js`），把官方新增的功能合并到我的项目中，注意完整保留我自己创建的所有小工具和 `INITIAL_APPS` 记录。”*
+- **🍴 方式 B：点击「Fork」（适合想一键跟进官方更新）**
+  - **特点**：与原仓库保持派生关联，未来可通过 GitHub 网页上的 **「Sync fork」** 按钮尝试一键拉取官方更新（⚠️ 注意：如果你删除了示例应用或重排了工具，Sync 时可能会提示解决代码冲突）。
 
 ### 第 2 步：让 AI 为你打造新工具
 在 Cursor、Claude Code、Windsurf、VSCode 或你习惯的任何 AI 编辑器中打开本文件夹，直接对 AI 说：
@@ -89,24 +98,45 @@ AI 将自动遵循规范，为你一步到位生成并挂载好新的小工具�
 
 ---
 
-## ☁️ 部署到 Cloudflare Pages（小白一分钟教程）
+## ☁️ 部署到 Cloudflare（3 步打造专属线上百宝箱）
 
-你的小工具不需要服务器，通过 Cloudflare Pages 免费全球加速上线：
+本项目 100% 免编译，无需服务器，依托 Cloudflare 全球 CDN 免费加速托管：
 
-1. 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)，在左侧菜单点击 **Workers 和 Pages** -> **Pages**。
-2. 点击 **连接到 Git（Connect to Git）**，选中你的 `PWABox` 仓库。
-3. 在设置页面的构建配置中：
-   - **框架预设（Framework preset）**：选择 `None`
-   - **构建命令（Build command）**：**保持完全留空**
-   - **构建输出目录（Build output directory）**：填写 `/`（或者保持默认）
-4. 点击 **保存并部署（Save and Deploy）**。
-5. 🇨🇳 **针对中国大陆用户的极速访问建议**：
-   - Cloudflare Pages 默认赠送的 `xxx.pages.dev` 在国内部分地区可能被干扰。
-   - **强烈建议**：在 Cloudflare 项目设置里的 **「Custom domains（自定义域）」** 绑定一个你自己的域名（如 `tools.yourname.com`），无需备案即可在国内享受 CDN 直连秒开体验！
+### 第 1 步：创建你的专属仓库
+在 GitHub 仓库主页顶部，点击 **「Use this template」**（推荐独立全新私有库）或点击 **「Fork」**（派生库），创建属于你自己的百宝箱仓库。
+
+### 第 2 步：在 Cloudflare 关联仓库
+1. 登录 [Cloudflare 控制台](https://dash.cloudflare.com/)，在左侧菜单点击 **Workers 和 Pages** -> **Create** -> **Pages**。
+2. 点击 **连接到 Git（Connect to Git）**，选中你刚创建的仓库。
+3. 在构建配置中，Cloudflare 已原生智能识别，**直接保留默认即可**：
+   - **框架预设（Framework preset）**：`None`
+   - **构建命令（Build command）**：留空（或保持默认）
+   - **部署命令（Deploy command）**：保持默认 `npx wrangler deploy`
+4. 点击 **保存并部署（Save and Deploy）**，数十秒后即可拥有专属线上地址！
+
+### 第 3 步：让 AI 定制，代码提交即自动更新
+以后任何时候，只需让 AI 为你编写或修改工具，代码 `git push` 后，Cloudflare 会在数十秒内自动完成全球更新，手机和电脑端即刻同步！
 
 ---
 
-## ⌨️ 效率快捷键
+💡 **针对中国大陆用户的极速访问建议**：
+- Cloudflare 默认赠送的 `*.pages.dev` 域名在国内部分地区可能被运营商干扰。
+- **强烈建议**：在 Cloudflare 项目设置里的 **「Custom domains（自定义域）」** 绑定一个你自己的域名（如 `tools.yourname.com`），无需备案即可在国内享受 CDN 直连秒开体验！
+
+---
+
+## 🐙 也支持部署到 GitHub Pages（点两下开关即上线）
+
+如果你不想注册 Cloudflare，也可以直接使用 GitHub 自带的免费 Pages 托管服务：
+
+1. 打开你的 GitHub 仓库页面，点击上方的 **Settings**（设置）；
+2. 在左侧菜单中点击 **Pages**；
+3. 在 **Build and deployment** 下：
+   - **Source**：选择 `Deploy from a branch`；
+   - **Branch**：选择 `main`（或 `master`），目录保持 `/ (root)`；
+4. 点击 **Save**（保存）。
+5. 等待约 30 秒刷新页面，即可获得专属线上地址：`https://<你的用户名>.github.io/<仓库名>/`。
+   - *（项目已深度适配 GitHub Pages 二级子路径与智能 404 自愈，开箱即用！）*
 
 - **`/` 或 `⌘K` (`Ctrl+K`)**：任何时候一键唤起搜索栏，快速定位应用。
 - **`Esc`**：清空搜索框、失焦，或关闭弹窗。

@@ -105,13 +105,23 @@
     }
     syncTheme();
 
-    // 智能计算根目录首页地址（兼顾二级路径与 Cloudflare Pages 根目录）
+    // 智能计算根目录首页地址（兼顾二级路径、GitHub Pages 与 Cloudflare Pages 根目录）
     function getHubUrl() {
-      // 无论在什么深层路径下 404，都回退到根目录 index.html
       const origin = window.location.origin;
-      const pathname = window.location.pathname;
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
       
-      // 如果是在某个子目录内报错，尝试定位到 PWABox 根
+      // 场景 1：部署在 GitHub Pages（形如 username.github.io/repo-name/...）
+      if (window.location.hostname.endsWith('github.io') && pathParts.length > 0) {
+        return origin + '/' + pathParts[0] + '/index.html';
+      }
+      
+      // 场景 2：如果在某个子应用深层路径（形如 /apps/xxx/...）
+      const appsIndex = pathParts.indexOf('apps');
+      if (appsIndex > 0) {
+        return origin + '/' + pathParts.slice(0, appsIndex).join('/') + '/index.html';
+      }
+
+      // 场景 3：普通根目录托管（如 Cloudflare Pages、Vercel、本地开发）
       return origin + '/index.html';
     }
 
