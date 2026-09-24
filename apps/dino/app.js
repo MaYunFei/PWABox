@@ -568,11 +568,15 @@ function gameOver() {
   playHitSound();
 
   if (score > hiScore) {
+    const isNewRecord = hiScore > 0;
     hiScore = score;
     localStorage.setItem('pwabox_dino_hi', hiScore);
     hiScoreText.textContent = `HI ${String(hiScore).padStart(5, '0')}`;
     const statHiScore = document.getElementById('statHiScore');
     if (statHiScore) statHiScore.textContent = hiScore;
+    if (isNewRecord && typeof confetti === 'function') {
+      confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
+    }
   }
 
   overlayTitle.textContent = `💥 GAME OVER (${score} 分)`;

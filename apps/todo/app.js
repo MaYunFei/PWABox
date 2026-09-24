@@ -98,6 +98,21 @@ function render() {
   lucide.createIcons();
 }
 
+let toastTimer = null;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  const toastMsg = document.getElementById('toastMsg');
+  if (!toast || !toastMsg) return;
+  toastMsg.textContent = msg;
+  toast.classList.remove('opacity-0', '-translate-y-2', 'pointer-events-none');
+  toast.classList.add('opacity-100', 'translate-y-0');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.classList.remove('opacity-100', 'translate-y-0');
+    toast.classList.add('opacity-0', '-translate-y-2', 'pointer-events-none');
+  }, 2500);
+}
+
 function addTodo(text) {
   if (!text.trim()) return;
   todos.unshift({
@@ -110,8 +125,32 @@ function addTodo(text) {
 }
 
 function toggleTodo(id) {
+  const target = todos.find(t => t.id === id);
+  const wasCompleted = target ? target.completed : false;
   todos = todos.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
   saveTodos();
+
+  if (!wasCompleted) {
+    const remainingActive = todos.filter(t => !t.completed).length;
+    if (remainingActive === 0 && todos.length > 0) {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
+      showToast('🎉 太棒了！已搞定所有待办事项！');
+    } else {
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 25,
+          spread: 45,
+          origin: { y: 0.8 }
+        });
+      }
+    }
+  }
 }
 
 function deleteTodo(id) {
@@ -142,7 +181,7 @@ closeBackupBtn.addEventListener('click', () => backupModal.classList.add('hidden
 
 copyBackupBtn.addEventListener('click', () => {
   navigator.clipboard.writeText(backupText.value).then(() => {
-    alert('待办数据已成功复制到剪贴板！');
+    showToast('待办数据已成功复制到剪贴板！');
   });
 });
 
@@ -153,12 +192,12 @@ restoreBackupBtn.addEventListener('click', () => {
       todos = parsed;
       saveTodos();
       backupModal.classList.add('hidden');
-      alert('数据恢复成功！');
+      showToast('数据恢复成功！');
     } else {
-      alert('数据格式无效，恢复失败。');
+      showToast('数据格式无效，恢复失败。');
     }
   } catch (err) {
-    alert('JSON 解析错误，请检查文本是否完整。');
+    showToast('JSON 解析错误，请检查文本是否完整。');
   }
 });
 

@@ -174,7 +174,34 @@ function switchMode(modeKey) {
   updateToggleBtnState();
 }
 
+let toastTimer = null;
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  const toastMsg = document.getElementById('toastMsg');
+  if (!toast || !toastMsg) return;
+  toastMsg.textContent = msg;
+  toast.classList.remove('opacity-0', '-translate-y-2', 'pointer-events-none');
+  toast.classList.add('opacity-100', 'translate-y-0');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    toast.classList.remove('opacity-100', 'translate-y-0');
+    toast.classList.add('opacity-0', '-translate-y-2', 'pointer-events-none');
+  }, 3000);
+}
+
+function sendNotification(title, body) {
+  if ('Notification' in window && Notification.permission === 'granted') {
+    try {
+      new Notification(title, { body, icon: 'icon.svg' });
+    } catch (e) {}
+  }
+}
+
 function startTimer() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().catch(() => {});
+  }
+
   isRunning = true;
   updateToggleBtnState();
 
@@ -187,10 +214,19 @@ function startTimer() {
       playChime();
       if (currentMode === 'work') {
         recordCompletedPomodoro();
-        alert('🎉 专注完成！休息一下吧。');
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 80,
+            spread: 60,
+            origin: { y: 0.7 }
+          });
+        }
+        showToast('🎉 专注完成！已自动切换为短休息。');
+        sendNotification('PWABox 极简番茄钟', '🎉 专注完成！休息一下吧。');
         switchMode('short');
       } else {
-        alert('☕️ 休息结束，准备开始新的专注！');
+        showToast('☕️ 休息结束，准备开始新的专注！');
+        sendNotification('PWABox 极简番茄钟', '☕️ 休息结束，准备开始新的专注！');
         switchMode('work');
       }
     }

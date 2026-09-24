@@ -236,7 +236,7 @@ AI 必须极其果断、一次性完成以下清理，不留任何死角：
    - **强制标准解法**：动态图标必须被包裹在容器盒子中（如 `<span id="iconBox"><i data-lucide="..."></i></span>`），动态切换时通过 `iconBox.innerHTML = '<i data-lucide="new-icon" class="..."></i>'` 重新注入模板，再调用 `lucide.createIcons({ root: iconBox })` 进行瞬时重绘。
 4. **支持数据导入/导出（贴心设计）**：
    - 涉及重要记录的工具（记账、待办等），必须在设置或角落提供一个“导出 JSON / 恢复数据”的轻量弹窗，方便用户跨设备备份。
-4. **PWA 离线运行**：
+5. **PWA 离线运行**：
    - 基础 Service Worker 必须实现静态资源 Cache-First 或 Stale-While-Revalidate，确保断网时已访问的工具依然能够打开使用。
 
 ---
@@ -245,4 +245,16 @@ AI 必须极其果断、一次性完成以下清理，不留任何死角：
 
 1. 保持代码整洁纯粹，不写过时的 `var`，统一使用 ES6+（`const`, `let`, 箭头函数, 解构赋值, 模板字符串）。
 2. 每一个微应用都是独立的可执行成品，严禁留下 `// TODO: 这里由用户自行实现` 等未完成占位代码。
-3. 纯原生原生实现所有动画与状态流转，优先使用轻巧、稳定、跨浏览器兼容的 API。
+3. 纯原生实现所有动画与状态流转，优先使用轻巧、稳定、跨浏览器兼容的 API。
+
+---
+
+## 七、借力开源与拒绝闭门造车铁律（Standing on Giants / Don't Reinvent the Wheel）
+
+1. **优先调研成熟开源解法（Prioritize Open-Source Standards）**：
+   - 当用户提出具体功能需求时，AI **坚决杜绝凭空手搓复杂轮子**（如自写脆弱的 Markdown 正则解析器、自写有精度缺陷的浮点运算、自写二维码生成等）。
+   - 必须优先调研并采用开源界经过验证的成熟解决方案、最佳实践或原生算法逻辑。
+2. **合规借力三原则（Compliant Integration）**：
+   - **轻量 CDN 优先**：对于成熟基础能力，优先通过官方高速 CDN（jsDelivr / cdnjs）以单个 `<script>` 标签引入成熟开源库（如 `marked`、`qrcode`、`canvas-confetti` 等）；
+   - **坚守零编译红线**：严禁为了复用开源而破坏 Zero-Build 宪法（严禁引入需要打包构建的 React/Vue 生态，必须是纯原生标准 UMD/Vanilla JS，保证直接双击与离线秒开）；
+   - **离线与可靠性兜底**：引入的外部 CDN 库必须具备防报错兜底（如 `window.confetti && confetti(...)`），确保无网络或离线环境下同样能优雅运行。
