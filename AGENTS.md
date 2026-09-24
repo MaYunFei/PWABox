@@ -185,10 +185,14 @@ AI 必须极其果断、一次性完成以下清理，不留任何死角：
    - **瞬时动效律（Micro-Interactions）**：
      - 所有折叠、切换、Hover 动效时长严格限制在 `150ms ~ 200ms`（`transition-all duration-150 ease-out`），绝对禁止超过 300ms 的拖沓长动画，保持原生客户端般的利落响应。
 4. **原生 App 触感与独立运行隔离（Standalone App Mode）**：
-   - **★ 独立安装检测与沉浸感保障**：
-     - 当微应用在浏览器中被访问时，左上角显示【返回大厅】按钮。
-     - **当该微应用被用户添加到桌面作为独立 App（Standalone）打开时，必须自动彻底隐藏【返回大厅】按钮与【安装按钮】！**
-     - 实现方式：通过 CSS 媒体查询 `@media (display-mode: standalone)` 以及 JS `window.navigator.standalone`，给返回按钮和安装按钮标记类名并在独立模式下隐藏，确保独立 App 拥有纯粹的原生质感。
+   - **★ 统一【独立安装】按钮规范（Unified Standalone Install Button）**：
+     - 每个微应用顶部导航右侧必须统一部署 **【独立安装】按钮**（文案强制统一为 `<span>独立安装</span>`，严禁简写为“安装”；导航大厅首页则统一为 `安装大厅`）；
+     - 按钮统一配置 `id="installAppBtn"` 与 class `standalone-hidden hidden items-center gap-1.5 ...`；
+     - 逻辑上统一监听 `beforeinstallprompt` 事件，触发后显隐切换，点击调用 `prompt()` 引导用户添加到桌面/主屏幕；
+   - **★ 独立安装运行检测与沉浸感保障**：
+     - 当微应用在浏览器中被访问时，左上角显示【返回大厅】按钮，右上角显示【独立安装】按钮。
+     - **当该微应用被用户添加到桌面作为独立 App（Standalone）打开时，必须自动彻底隐藏【返回大厅】按钮与【独立安装】按钮！**
+     - 实现方式：通过 CSS 媒体查询 `@media (display-mode: standalone)` 以及 JS `window.navigator.standalone`，给返回按钮和独立安装按钮标记 `.standalone-hidden` 类名并在独立模式下强制 `display: none !important;`，确保独立 App 拥有纯粹的原生质感。
    - 禁止文字在点击时被误选蓝底：`-webkit-user-select: none; user-select: none;`（输入框除外）。
    - 去除移动端点击高亮暗影：`-webkit-tap-highlight-color: transparent;`。
    - 所有按钮与卡片必须具有触控反馈：`active:scale-[0.97] transition-all duration-150`。
