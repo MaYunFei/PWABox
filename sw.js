@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pwabox-hub-v2';
+const CACHE_NAME = 'pwabox-hub-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
