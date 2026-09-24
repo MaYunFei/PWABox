@@ -1,4 +1,5 @@
-const CACHE_NAME = 'pwabox-hub-v3';
+// 永久固定缓存空间名（采用 Network-First 策略，内容自动覆盖，无需手动递增版本号）
+const CACHE_NAME = 'pwabox-cache';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -7,7 +8,7 @@ const ASSETS_TO_CACHE = [
   './icon.svg'
 ];
 
-// 安装阶段：预缓存核心骨架资源
+// 安装阶段：预缓存核心骨架资源并立即接管
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -16,13 +17,14 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// 激活阶段：清理旧版本缓存
+// 激活阶段：立即生效并清理历史遗留的旧版命名缓存
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((key) => {
-          if (key !== CACHE_NAME) {
+          // 清理历史遗留的 pwabox-hub-v1/v2/v3 缓存
+          if (key !== CACHE_NAME && key.startsWith('pwabox-')) {
             return caches.delete(key);
           }
         })
@@ -31,37 +33,51 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// 请求拦截：Stale-While-Revalidate 策略（优先返回缓存，同时异步从网络拉取并更新缓存）
+// 请求拦截策略：
+// 1. 页面导航（HTML）：网络优先（Network-First），确保用户永远看到最新代码，断网时秒级降级使用缓存
+// 2. 静态资源（图标、manifest 等）：Stale-While-Revalidate，秒开并后台静默更新
 self.addEventListener('fetch', (event) => {
-  // 只拦截 GET 请求
   if (event.request.method !== 'GET') return;
 
-  const url = new URL(event.request.url);
+  const isNavigation = event.request.mode === 'navigate';
 
-  // 跨域 CDN（如 tailwind、lucide）尝试缓存或直通
-  event.respondWith(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      const cachedResponse = await cache.match(event.request);
-      
-      const fetchPromise = fetch(event.request).then((networkResponse) => {
-        // 如果是同源或者受信任 CDN，缓存副本
-        if (networkResponse && networkResponse.status === 200) {
-          cache.put(event.request, networkResponse.clone());
+  if (isNavigation) {
+    // ★ 导航请求：网络优先 (Network-First)
+    event.respondWith(
+      fetch(event.request).then((networkResponse) => {
+        // 如果服务器返回 404，回退到自愈页
+        if (networkResponse.status === 404) {
+          return caches.match('./404.html').then((cached404) => cached404 || networkResponse);
         }
-        // 如果页面导航返回 404，回退到 404.html 或 index.html
-        if (event.request.mode === 'navigate' && networkResponse.status === 404) {
-          return cache.match('./404.html') || cache.match('./index.html');
+        // 成功获取最新页面，静默更新到缓存中（实现免版本号自动刷新）
+        if (networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
         }
         return networkResponse;
       }).catch(async () => {
-        // 离线且网络不可达时返回缓存
+        // 断网/离线兜底：从缓存读取
+        const cachedResponse = await caches.match(event.request);
         if (cachedResponse) return cachedResponse;
-        if (event.request.mode === 'navigate') {
-          return cache.match('./404.html') || cache.match('./index.html');
-        }
-      });
+        
+        // 兜底回退首页或 404
+        return (await caches.match('./index.html')) || (await caches.match('./404.html'));
+      })
+    );
+  } else {
+    // ★ 静态资源：缓存优先 + 后台更新 (Stale-While-Revalidate)
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        const fetchPromise = fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          }
+          return networkResponse;
+        }).catch(() => {/* 离线静默忽略 */});
 
-      return cachedResponse || fetchPromise;
-    })
-  );
+        return cachedResponse || fetchPromise;
+      })
+    );
+  }
 });
