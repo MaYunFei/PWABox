@@ -563,7 +563,7 @@
     });
 
     document.getElementById("copyPromptBtn").addEventListener("click", () => {
-      const promptText = `请严格阅读并遵守根目录 AGENTS.md 的 Refactoring UI 与 Apple HIG 工业设计规范（双模响应、8pt间距、克制单色、同心圆角、零滚动条），帮我新建一个小工具：【在此输入工具名称与功能需求】。`;
+      const promptText = `帮我新建一个小工具：【在此输入工具名称与功能需求】。`;
       navigator.clipboard.writeText(promptText).then(() => {
         showToast("已复制指令！粘贴发给 AI 并填入工具需求即可。");
       });
